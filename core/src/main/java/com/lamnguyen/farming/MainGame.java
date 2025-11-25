@@ -1,9 +1,11 @@
 package com.lamnguyen.farming;
 
 import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.lamnguyen.farming.entities.Crop;
 import com.lamnguyen.farming.entities.Player;
 import com.lamnguyen.farming.systems.InputSystem;
 
@@ -27,6 +29,7 @@ public class MainGame extends ApplicationAdapter {
     // Top-left position of dirt patch (centered)
     private final int dirtStartX = (MAP_WIDTH / 2) - (DIRT_WIDTH / 2);
     private final int dirtStartY = (MAP_HEIGHT / 2) - (DIRT_HEIGHT / 2);
+    Crop crop = new Crop(dirtStartX + 2, dirtStartY + 2);
 
     @Override
     public void create() {
@@ -77,6 +80,9 @@ public class MainGame extends ApplicationAdapter {
                 );
             }
         }
+
+        crop.update(Gdx.graphics.getDeltaTime());
+        crop.render(shape);
 
         shape.end();
     }
