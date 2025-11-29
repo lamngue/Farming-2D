@@ -1,75 +1,118 @@
 package com.lamnguyen.farming.entities;
 
+
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-
 public class Crop {
+
+    public CropType type;
 
     // Tile position
     public int tileX;
     public int tileY;
 
-    // Crop state
-    private float growthTimer = 0f;
-    private int stage = 0; // 0 = seed, 1 = sprout, 2 = grown, 3 = ready
-
-    private static final float TIME_TO_GROW = 3f; // seconds per stage
-    private static final int MAX_STAGE = 3;
-
+    // Status
+    private int waterLevel;
+    private int fertilizerLevel;
+    private int growthStage;
+    private float growTimer;
     private static final int TILE_SIZE = 32;
 
-    public Crop(int tileX, int tileY) {
+    // Settings
+    private static final int MAX_WATER = 5;
+    private static final int MAX_FERTILIZER = 3;
+    private static final float GROW_TIME = 2f; // seconds per stage
+
+    public Crop(CropType type, int tileX, int tileY) {
+        this.type = type;
         this.tileX = tileX;
         this.tileY = tileY;
+        this.waterLevel = 0;
+        this.fertilizerLevel = 0;
+        this.growthStage = 0;
+        this.growTimer = 0;
     }
 
-    // Called in render/update loop
+    // Called in render() or update()
     public void update(float delta) {
-        if (stage < MAX_STAGE) {
-            growthTimer += delta;
 
-            if (growthTimer >= TIME_TO_GROW) {
-                stage++;
-                growthTimer = 0f;
+        if (!isFullyGrown() && waterLevel > 0) {
+            float speedBonus = 1 + (fertilizerLevel * 0.15f);
+            growTimer += delta * speedBonus;
+            if (growTimer >= GROW_TIME) {
+                growTimer = 0;
+                growthStage++;
+                waterLevel--;
+
+                if (fertilizerLevel > 0 && Math.random() > 0.7)
+                    fertilizerLevel--;   // sometimes used up
             }
         }
     }
 
-    public boolean isFullyGrown() {
-        return stage == MAX_STAGE;
-    }
+    // --------------------------
+    // Actions
+    // --------------------------
 
-    // Later you can connect this to harvesting system
-    public void harvest() {
-        if (isFullyGrown()) {
-            stage = 0;
+    public void water() {
+        if (waterLevel < MAX_WATER) {
+            waterLevel++;
         }
     }
 
-    public void render(ShapeRenderer shape) {
+    public void fertilize() {
+        if (fertilizerLevel < MAX_FERTILIZER) {
+            fertilizerLevel++;
+        }
+    }
+
+    public boolean isFullyGrown() {
+        return growthStage >= type.maxGrowthStage;
+    }
+
+    public int harvest() {
+        if (isFullyGrown()) {
+            return type.sellPrice + (fertilizerLevel * 5);
+        }
+        return 0;
+    }
+
+    // --------------------------
+    // Getters
+    // --------------------------
+
+    public int getGrowthStage() {
+        return growthStage;
+    }
+
+    public int getWaterLevel() {
+        return waterLevel;
+    }
+
+    public int getFertilizerLevel() {
+        return fertilizerLevel;
+    }
+
+    public int getSellPrice() {
+        return type.sellPrice;
+    }
+
+
+    public void render(SpriteBatch batch) {
+        Texture img = type.stages[growthStage];
+
         float x = tileX * TILE_SIZE;
         float y = tileY * TILE_SIZE;
 
-        switch (stage) {
-            case 0: // Seed
-                shape.setColor(0.1f, 0.1f, 0.1f, 1);
-                shape.circle(x + 16, y + 16, 4);
-                break;
+        batch.draw(img, x, y, TILE_SIZE, TILE_SIZE);
+    }
 
-            case 1: // Small sprout
-                shape.setColor(0f, 0.8f, 0f, 1);
-                shape.rect(x + 14, y + 8, 4, 16);
-                break;
-
-            case 2: // Growing plant
-                shape.setColor(0f, 0.6f, 0f, 1);
-                shape.rect(x + 10, y + 6, 12, 20);
-                break;
-
-            case 3: // Fully grown
-                shape.setColor(0f, 0.5f, 0f, 1);
-                shape.rect(x + 6, y + 6, 20, 20);
-                break;
-        }
+    public void reset() {
+        waterLevel = 0;
+        fertilizerLevel = 0;
+        growthStage = 0;
+        growTimer = 0;
     }
 }
