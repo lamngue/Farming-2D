@@ -14,14 +14,13 @@ public class Crop {
     public int tileY;
 
     // Status
-    private int waterLevel;
+    private boolean isWatered;
     private int fertilizerLevel;
     private int growthStage;
     private float growTimer;
     private static final int TILE_SIZE = 32;
 
     // Settings
-    private static final int MAX_WATER = 5;
     private static final int MAX_FERTILIZER = 3;
     private static final float GROW_TIME = 2f; // seconds per stage
 
@@ -29,7 +28,7 @@ public class Crop {
         this.type = type;
         this.tileX = tileX;
         this.tileY = tileY;
-        this.waterLevel = 0;
+        this.isWatered = false;
         this.fertilizerLevel = 0;
         this.growthStage = 0;
         this.growTimer = 0;
@@ -38,13 +37,13 @@ public class Crop {
     // Called in render() or update()
     public void update(float delta) {
 
-        if (!isFullyGrown() && waterLevel > 0) {
+        if (!isFullyGrown() && isWatered) {
             float speedBonus = 1 + (fertilizerLevel * 0.15f);
             growTimer += delta * speedBonus;
             if (growTimer >= GROW_TIME) {
                 growTimer = 0;
                 growthStage++;
-                waterLevel--;
+                isWatered = false;
 
                 if (fertilizerLevel > 0 && Math.random() > 0.7)
                     fertilizerLevel--;   // sometimes used up
@@ -57,9 +56,7 @@ public class Crop {
     // --------------------------
 
     public void water() {
-        if (waterLevel < MAX_WATER) {
-            waterLevel++;
-        }
+        isWatered = true;
     }
 
     public void fertilize() {
@@ -87,8 +84,8 @@ public class Crop {
         return growthStage;
     }
 
-    public int getWaterLevel() {
-        return waterLevel;
+    public boolean getIsWatered() {
+        return isWatered;
     }
 
     public int getFertilizerLevel() {
@@ -110,7 +107,7 @@ public class Crop {
     }
 
     public void reset() {
-        waterLevel = 0;
+        isWatered = false;
         fertilizerLevel = 0;
         growthStage = 0;
         growTimer = 0;

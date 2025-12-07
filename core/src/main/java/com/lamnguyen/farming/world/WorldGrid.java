@@ -1,5 +1,6 @@
 package com.lamnguyen.farming.world;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.lamnguyen.farming.entities.Crop;
@@ -9,12 +10,24 @@ public class WorldGrid {
 
     public static final int TILE_SIZE = 32;
 
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
     private int width;
     private int height;
     private Tile[][] tiles;
     private Crop[][] crops;
 
+
     private boolean[][] watered;
+
+    private Texture grassTex;
+    private Texture dirtTex;
 
     public WorldGrid(int width, int height) {
         this.width = width;
@@ -24,6 +37,8 @@ public class WorldGrid {
         crops = new Crop[width][height];
         watered = new boolean[width][height];
 
+        grassTex = new Texture("grass_texture.png");
+        dirtTex = new Texture("dirt_texture.png");
         // Default everything to grass
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
@@ -74,67 +89,38 @@ public class WorldGrid {
 
     // -------- DRAW --------
 
-    public void renderFill(ShapeRenderer shape) {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-
-                Tile tile = tiles[x][y];
-
-                if (tile.getType() == TileType.GRASS)
-                    shape.setColor(0, 0.6f, 0, 1);
-                else if (tile.getType() == TileType.DIRT)
-                    shape.setColor(0.6f, 0.4f, 0.2f, 1);
-
-                shape.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            }
-        }
-    }
-
-
-
-
-    // inside WorldGrid.java
-    /**
-     * Draws only the filled dirt tiles and any crops (no grid lines).
-     * Assumes ShapeRenderer is already in ShapeType.Filled.
-     */
-    public void renderGrid(ShapeRenderer shape, SpriteBatch batch) {
+    public void renderFill(SpriteBatch batch) {
 
         int dirtStartX = (width / 2 - 2);
         int dirtStartY = (height / 2 - 2);
 
-        // --- 1) DRAW FILLED TILES WITH SHAPERENDERER ---
-        for (int x = dirtStartX; x < dirtStartX + 5; x++) {
-            for (int y = dirtStartY; y < dirtStartY + 4; y++) {
-
-                if (!isInBounds(x, y)) continue;
-
-                // Watered dirt = darker
-                if (watered[x][y]) {
-                    shape.setColor(0.35f, 0.25f, 0.15f, 1);
-                } else {
-                    shape.setColor(0.6f, 0.4f, 0.2f, 1);
-                }
-
-                shape.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            }
-        }
-
-        // --- 2) DRAW CROPS USING SPRITEBATCH ---
         batch.begin();
+//
+//        // --- Draw grass everywhere ---
+//        for (int x = 0; x < width; x++) {
+//            for (int y = 0; y < height; y++) {
+//                batch.draw(grassTex, x * TILE_SIZE, y * TILE_SIZE);
+//            }
+//        }
 
+        // --- Draw dirt patch ---
         for (int x = dirtStartX; x < dirtStartX + 5; x++) {
             for (int y = dirtStartY; y < dirtStartY + 4; y++) {
 
                 if (!isInBounds(x, y)) continue;
 
-                Crop crop = crops[x][y];
-                if (crop != null) {
-                    crop.render(batch);   // <--- uses image instead of shapes
+                if (watered[x][y]) {
+                    // tint darker
+                    batch.setColor(0.6f, 0.45f, 0.3f, 1f);
+                } else {
+                    batch.setColor(1f, 1f, 1f, 1f);
                 }
+
+                batch.draw(dirtTex, x * TILE_SIZE, y * TILE_SIZE);
             }
         }
 
+        batch.setColor(1f, 1f, 1f, 1f); // reset tint
         batch.end();
     }
 
@@ -171,8 +157,9 @@ public class WorldGrid {
     }
 
     public void plantCrop(int x, int y) {
-        if (!isDirt(x, y)) return;
-        if (crops[x][y] != null) return; // already planted
+        if (!isDirt(x, y) || crops[x][y] != null) {
+            return;
+        }
 
         crops[x][y] = new Crop(CropType.WHEAT, x, y);
 
@@ -180,6 +167,7 @@ public class WorldGrid {
             crops[x][y].water();
         }
     }
+
 
 
     public void water(int x, int y) {
@@ -194,20 +182,25 @@ public class WorldGrid {
     public void harvest(int x, int y) {
         if (crops[x][y] != null && crops[x][y].isFullyGrown()) {
             System.out.println("Sold for $" + crops[x][y].type.sellPrice);
-            crops[x][y] = null;
             watered[x][y] = false;
-            crops[x][y].reset();
+            crops[x][y] = null;
         }
     }
 
     public void update(float delta) {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                if (crops[x][y] != null) {
-                    crops[x][y].update(delta);
+                Crop c = crops[x][y];
+                if (c != null) {
+                    boolean wasWatered = c.getIsWatered();
+                    c.update(delta);
+                    if (wasWatered && !c.getIsWatered()) {
+                        watered[x][y] = false;  // soil dries after crop uses water
+                    }
                 }
             }
         }
+
     }
 
 

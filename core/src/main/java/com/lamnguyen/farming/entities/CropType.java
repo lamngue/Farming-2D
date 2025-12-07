@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Texture;
 
 public enum CropType {
 
-    WHEAT("wheat_stage_", 4, 10);
+    WHEAT("crops/wheat_stage_", 4, 10);
 
     public final Texture[] stages;
     public final int maxGrowthStage;
