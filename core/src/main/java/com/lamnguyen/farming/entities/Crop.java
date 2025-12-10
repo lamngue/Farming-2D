@@ -3,7 +3,6 @@ package com.lamnguyen.farming.entities;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public class Crop {
 
@@ -106,10 +105,11 @@ public class Crop {
         batch.draw(img, x, y, TILE_SIZE, TILE_SIZE);
     }
 
-    public void reset() {
-        isWatered = false;
-        fertilizerLevel = 0;
-        growthStage = 0;
-        growTimer = 0;
+    public ItemType getHarvestItem() {
+        switch (type) {
+            case WHEAT: return ItemType.WHEAT_CROP;
+            // add more crops later
+        }
+        return null;
     }
 }

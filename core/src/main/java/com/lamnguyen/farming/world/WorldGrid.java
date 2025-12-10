@@ -37,7 +37,7 @@ public class WorldGrid {
         crops = new Crop[width][height];
         watered = new boolean[width][height];
 
-        grassTex = new Texture("grass_texture.png");
+//        grassTex = new Texture("grass_texture.png");
         dirtTex = new Texture("dirt_texture.png");
         // Default everything to grass
         for (int x = 0; x < width; x++) {
@@ -156,19 +156,21 @@ public class WorldGrid {
             y >= startY && y < startY + 4;
     }
 
-    public void plantCrop(int x, int y) {
-        if (!isDirt(x, y) || crops[x][y] != null) {
-            return;
-        }
+    public boolean plantCrop(int x, int y, CropType type) {
+        if (!isDirt(x, y)) return false;
+        if (crops[x][y] != null) return false;
 
-        crops[x][y] = new Crop(CropType.WHEAT, x, y);
+        crops[x][y] = new Crop(type, x, y);
 
-        if (watered[x][y]) {
-            crops[x][y].water();
-        }
+        if (watered[x][y]) crops[x][y].water();
+
+        return true;
     }
 
 
+    public Crop getCrop(int tileX, int tileY) {
+        return crops[tileX][tileY];
+    }
 
     public void water(int x, int y) {
         if (isDirt(x, y)) {

@@ -1,9 +1,6 @@
 package com.lamnguyen.farming.entities;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
@@ -12,7 +9,7 @@ import com.lamnguyen.farming.world.WorldGrid;
 public class Player {
 
     public float x, y; // now in pixels
-    public static final float SPEED = 100f; // pixels per second
+    public static final float SPEED = 10ddd0f; // pixels per second
 
     public enum Direction { UP, DOWN, LEFT, RIGHT }
     public Direction direction = Direction.DOWN;
@@ -24,16 +21,19 @@ public class Player {
     private Animation<TextureRegion> walkDown;
     private Animation<TextureRegion> walkLeft;
     private Animation<TextureRegion> walkRight;
+    public Inventory inventory;
 
     private float animTimer = 0;
     private TextureRegion currentFrame;
     int startTileX = 5;
     int startTileY = 5;
     public Player() {
+        this.inventory = new Inventory();
+
         this.x = startTileX * WorldGrid.TILE_SIZE;
         this.y = startTileY * WorldGrid.TILE_SIZE;
-        System.out.println("Player initialized at pixel: " + x + "," + y);
-
+        inventory.add(ItemType.WHEAT_SEED, 20); // starting seeds
+        inventory.add(ItemType.WHEAT_CROP, 0);
     }
 
     public void loadTextures(TextureAtlas atlas) {
@@ -75,4 +75,3 @@ public class Player {
 
 
 }
-
