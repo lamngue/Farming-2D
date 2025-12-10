@@ -9,7 +9,7 @@ import com.lamnguyen.farming.world.WorldGrid;
 public class Player {
 
     public float x, y; // now in pixels
-    public static final float SPEED = 10ddd0f; // pixels per second
+    public static final float SPEED = 100f; // pixels per second
 
     public enum Direction { UP, DOWN, LEFT, RIGHT }
     public Direction direction = Direction.DOWN;
