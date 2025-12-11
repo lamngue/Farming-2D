@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -25,6 +26,7 @@ public class MainGame extends ApplicationAdapter {
     InputSystem input = new InputSystem();
     WorldGrid world;
     SpriteBatch batch;
+    OrthographicCamera camera;
 
     private static final int MAP_WIDTH = 25;
     private static final int MAP_HEIGHT = 18;
@@ -39,6 +41,8 @@ public class MainGame extends ApplicationAdapter {
     public void create() {
         shape = new ShapeRenderer();
         batch = new SpriteBatch();
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         // Initialize inventory
         inventory = new Inventory();
         inventory.add(ItemType.WHEAT_SEED, 5);
@@ -86,14 +90,15 @@ public class MainGame extends ApplicationAdapter {
         world.update(dt);
         player.updateAnimation(dt);
         input.updateWorld(player, world);
+        input.updateSeedSelection(player);
 
         // --- Clear screen ---
         ScreenUtils.clear(0, 0.6f, 0, 1);
 
         // --- Render everything via RenderSystem ---
-        renderSystem.renderWorld(shape, batch, world);
+        renderSystem.renderWorld(shape, batch, world, camera);
         renderSystem.renderPlayer(batch, player);
-        renderSystem.renderUI(batch, whitePixelTexture, player.inventory, font);
+        renderSystem.renderUI(batch, whitePixelTexture, font, player);
     }
 
 
@@ -101,6 +106,11 @@ public class MainGame extends ApplicationAdapter {
     @Override
     public void dispose() {
         shape.dispose();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        camera.setToOrtho(false, width, height);
     }
 }
 

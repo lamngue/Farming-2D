@@ -5,7 +5,11 @@ import com.badlogic.gdx.graphics.Texture;
 public enum ItemType {
 
     WHEAT_SEED("items/wheat_seed.png", CropType.WHEAT),
-    WHEAT_CROP("items/wheat_crop.png", null);
+    WHEAT_CROP("items/wheat_crop.png", null),
+    CORN_SEED("items/corn_seed.png", CropType.CORN),
+    CORN_CROP("items/corn_crop.png", null);
+
+
 
     public final String iconPath;
     public final CropType cropType; // Null for non-seed items

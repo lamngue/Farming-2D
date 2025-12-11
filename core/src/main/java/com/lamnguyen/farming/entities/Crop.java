@@ -17,11 +17,11 @@ public class Crop {
     private int fertilizerLevel;
     private int growthStage;
     private float growTimer;
+    private final float growthTime;
     private static final int TILE_SIZE = 32;
 
     // Settings
     private static final int MAX_FERTILIZER = 3;
-    private static final float GROW_TIME = 2f; // seconds per stage
 
     public Crop(CropType type, int tileX, int tileY) {
         this.type = type;
@@ -31,24 +31,38 @@ public class Crop {
         this.fertilizerLevel = 0;
         this.growthStage = 0;
         this.growTimer = 0;
+        this.growthTime = type.growthTime;
     }
 
-    // Called in render() or update()
     public void update(float delta) {
+        if (isFullyGrown()) return;
 
-        if (!isFullyGrown() && isWatered) {
-            float speedBonus = 1 + (fertilizerLevel * 0.15f);
-            growTimer += delta * speedBonus;
-            if (growTimer >= GROW_TIME) {
-                growTimer = 0;
-                growthStage++;
-                isWatered = false;
+        float speedBonus = 0.5f;
 
-                if (fertilizerLevel > 0 && Math.random() > 0.7)
-                    fertilizerLevel--;   // sometimes used up
+        // Watered crops grow faster
+        if (isWatered) {
+            speedBonus *= 2f;  // e.g., double speed if watered
+        }
+
+        speedBonus += fertilizerLevel * 0.15f;
+
+        // Advance growth timer
+        growTimer += delta * speedBonus;
+
+        if (growTimer >= growthTime) {
+            growTimer -= growthTime; // keep remainder
+            growthStage++;
+
+            // Optional: reduce fertilizer occasionally
+            if (fertilizerLevel > 0 && Math.random() > 0.7) {
+                fertilizerLevel--;
             }
+
+            // Reset watered flag only when moving to the next stage
+            isWatered = false;
         }
     }
+
 
     // --------------------------
     // Actions
@@ -108,7 +122,7 @@ public class Crop {
     public ItemType getHarvestItem() {
         switch (type) {
             case WHEAT: return ItemType.WHEAT_CROP;
-            // add more crops later
+            case CORN: return ItemType.CORN_CROP;
         }
         return null;
     }

@@ -43,13 +43,15 @@ public class InputSystem {
         float centerX = player.x + w / 2f;
         float centerY = player.y + h / 2f;
 
-        int tileX = (int)(centerX / WorldGrid.TILE_SIZE);
-        int tileY = (int)(centerY / WorldGrid.TILE_SIZE);
+        int tileX = (int) (centerX / WorldGrid.TILE_SIZE);
+        int tileY = (int) (centerY / WorldGrid.TILE_SIZE);
         tileX = MathUtils.clamp(tileX, 0, world.getWidth() - 1);
         tileY = MathUtils.clamp(tileY, 0, world.getHeight() - 1);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
-            ItemType seed = ItemType.WHEAT_SEED;
+            ItemType seed = player.selectedSeed;
+
+            if (!seed.isSeed()) return;
 
             if (player.inventory.get(seed) > 0) {
                 CropType crop = seed.cropType;
@@ -74,5 +76,17 @@ public class InputSystem {
 
         }
     }
+
+    public void updateSeedSelection(Player player) {
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) {
+            player.selectedSeed = ItemType.WHEAT_SEED;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) {
+            player.selectedSeed = ItemType.CORN_SEED;
+        }
+
+    }
+
 }
 

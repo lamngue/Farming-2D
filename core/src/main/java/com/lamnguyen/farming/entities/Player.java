@@ -22,7 +22,7 @@ public class Player {
     private Animation<TextureRegion> walkLeft;
     private Animation<TextureRegion> walkRight;
     public Inventory inventory;
-
+    public ItemType selectedSeed = ItemType.WHEAT_SEED;
     private float animTimer = 0;
     private TextureRegion currentFrame;
     int startTileX = 5;
@@ -32,8 +32,10 @@ public class Player {
 
         this.x = startTileX * WorldGrid.TILE_SIZE;
         this.y = startTileY * WorldGrid.TILE_SIZE;
-        inventory.add(ItemType.WHEAT_SEED, 20); // starting seeds
+        inventory.add(ItemType.WHEAT_SEED, 5); // starting seeds
         inventory.add(ItemType.WHEAT_CROP, 0);
+        inventory.add(ItemType.CORN_SEED, 5); // starting seeds
+        inventory.add(ItemType.CORN_CROP, 0);
     }
 
     public void loadTextures(TextureAtlas atlas) {
@@ -55,6 +57,7 @@ public class Player {
             case RIGHT: currentFrame = walkRight.getKeyFrame(animTimer); break;
         }
     }
+
 
     public TextureRegion getSprite() {
         return currentFrame;
