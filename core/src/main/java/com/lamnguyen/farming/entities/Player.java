@@ -4,9 +4,19 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Array;
 import com.lamnguyen.farming.world.WorldGrid;
 
+
 public class Player {
+
+    public enum ActionState {
+        NONE,
+        WATERING
+    }
+
+    public ActionState actionState = ActionState.NONE;
+
 
     public float x, y; // now in pixels
     public static final float SPEED = 100f; // pixels per second
@@ -21,9 +31,15 @@ public class Player {
     private Animation<TextureRegion> walkDown;
     private Animation<TextureRegion> walkLeft;
     private Animation<TextureRegion> walkRight;
+
+    private Animation<TextureRegion> waterUp;
+    private Animation<TextureRegion> waterDown;
+    private Animation<TextureRegion> waterLeft;
+    private Animation<TextureRegion> waterRight;
+
     public Inventory inventory;
     public ItemType selectedSeed = ItemType.WHEAT_SEED;
-    private float animTimer = 0;
+    public float animTimer = 0;
     private TextureRegion currentFrame;
     int startTileX = 5;
     int startTileY = 5;
@@ -38,38 +54,83 @@ public class Player {
         inventory.add(ItemType.CORN_CROP, 0);
     }
 
-    public void loadTextures(TextureAtlas atlas) {
-        walkUp = new Animation<>(0.15f, atlas.findRegions("walk_up"), Animation.PlayMode.LOOP);
-        walkDown = new Animation<>(0.15f, atlas.findRegions("walk_down"), Animation.PlayMode.LOOP);
-        walkLeft = new Animation<>(0.15f, atlas.findRegions("walk_left"), Animation.PlayMode.LOOP);
-        walkRight = new Animation<>(0.15f, atlas.findRegions("walk_right"), Animation.PlayMode.LOOP);
-        currentFrame = walkDown.getKeyFrame(0);
+    private Animation<TextureRegion> createAnim(TextureAtlas atlas, String name, float frameDuration, Animation.PlayMode mode) {
+        Array<TextureAtlas.AtlasRegion> regions = atlas.findRegions(name);
+        if (regions.size == 0) {
+            System.out.println("Warning: No frames found for: " + name);
+            return null;
+        }
+        Animation<TextureRegion> anim = new Animation<>(frameDuration, regions);
+        if (mode != null) anim.setPlayMode(mode);
+        return anim;
     }
 
-    public void updateAnimation(float dt) {
-        if (isMoving) animTimer += dt;
-        else animTimer = 0;
+    public void loadTextures(TextureAtlas atlas) {
+        walkUp = createAnim(atlas, "walking/walk_up", 0.15f, Animation.PlayMode.LOOP);
+        walkDown = createAnim(atlas, "walking/walk_down", 0.15f, Animation.PlayMode.LOOP);
+        walkLeft = createAnim(atlas, "walking/walk_left", 0.15f, Animation.PlayMode.LOOP);
+        walkRight = createAnim(atlas, "walking/walk_right", 0.15f, Animation.PlayMode.LOOP);
 
-        switch (direction) {
-            case UP:    currentFrame = walkUp.getKeyFrame(animTimer); break;
-            case DOWN:  currentFrame = walkDown.getKeyFrame(animTimer); break;
-            case LEFT:  currentFrame = walkLeft.getKeyFrame(animTimer); break;
-            case RIGHT: currentFrame = walkRight.getKeyFrame(animTimer); break;
+        waterUp = createAnim(atlas, "watering/watering_up", 0.12f, null);
+        waterDown = createAnim(atlas, "watering/watering_down", 0.12f, null);
+        waterLeft = createAnim(atlas, "watering/watering_left", 0.12f, null);
+        waterRight = createAnim(atlas, "watering/watering_right", 0.12f, null);
+
+        if (walkDown != null) currentFrame = walkDown.getKeyFrame(0);
+    }
+
+
+
+    public void startWatering() {
+        if (actionState != ActionState.WATERING) {
+            actionState = ActionState.WATERING;
+            animTimer = 0;
         }
     }
 
+
+    public void updateAnimation(float dt) {
+
+        // WATERING animation has priority
+        if (actionState == ActionState.WATERING) {
+
+            animTimer += dt;
+
+            Animation<TextureRegion> anim = null;
+            switch (direction) {
+                case UP:    anim = waterUp; break;
+                case DOWN:  anim = waterDown; break;
+                case LEFT:  anim = waterLeft; break;
+                case RIGHT: anim = waterRight; break;
+            }
+
+            currentFrame = anim.getKeyFrame(animTimer);
+
+            if (anim.isAnimationFinished(animTimer)) {
+                actionState = ActionState.NONE;
+                animTimer = 0;
+            }
+            return;
+        }
+
+        // WALKING
+        if (isMoving) {
+            animTimer += dt;
+            switch (direction) {
+                case UP:    currentFrame = walkUp.getKeyFrame(animTimer, true); break;
+                case DOWN:  currentFrame = walkDown.getKeyFrame(animTimer, true); break;
+                case LEFT:  currentFrame = walkLeft.getKeyFrame(animTimer, true); break;
+                case RIGHT: currentFrame = walkRight.getKeyFrame(animTimer, true); break;
+            }
+        } else {
+            animTimer = 0;
+        }
+    }
 
     public TextureRegion getSprite() {
         return currentFrame;
     }
 
-    public int getTileX() {
-        return Math.round(x / WorldGrid.TILE_SIZE);
-    }
-
-    public int getTileY() {
-        return Math.round(y / WorldGrid.TILE_SIZE);
-    }
 
     public void clampPosition(int worldWidthInTiles, int worldHeightInTiles) {
         x = MathUtils.clamp(x, 0, worldWidthInTiles * WorldGrid.TILE_SIZE - 1);

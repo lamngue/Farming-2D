@@ -70,6 +70,10 @@ public class MainGame extends ApplicationAdapter {
         world.createDirtPatch(dirtStartX, dirtStartY, DIRT_WIDTH, DIRT_HEIGHT);
         TextureAtlas atlas = new TextureAtlas(Gdx.files.internal("atlas/player.atlas"));
         player.loadTextures(atlas);
+        System.out.println("water_up frames: " + atlas.findRegions("watering_up").size);
+        System.out.println("water_down frames: " + atlas.findRegions("watering_down").size);
+        System.out.println("water_left frames: " + atlas.findRegions("watering_left").size);
+        System.out.println("water_right frames: " + atlas.findRegions("watering_right").size);
 
         // White pixel for inventory box backgrounds
         Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);

@@ -12,6 +12,12 @@ import com.lamnguyen.farming.world.WorldGrid;
 public class InputSystem {
 
     public void updatePlayer(Player player, float dt) {
+        if (player.actionState == Player.ActionState.WATERING) {
+            player.isMoving = false;
+            return;
+        }
+        if (player.actionState != Player.ActionState.NONE)
+            return;
         player.isMoving = false;
 
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
@@ -37,6 +43,7 @@ public class InputSystem {
     }
 
     public void updateWorld(Player player, WorldGrid world) {
+
         int w = player.getSprite().getRegionWidth();
         int h = player.getSprite().getRegionHeight();
 
@@ -63,7 +70,10 @@ public class InputSystem {
                 }
             }
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.E)) world.water(tileX, tileY);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+            player.startWatering();
+            world.water(tileX, tileY);
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
             Crop c = world.getCrop(tileX, tileY);
             if (c != null && c.isFullyGrown()) {
