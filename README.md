@@ -1,5 +1,13 @@
 # FarmingGame
 
+- This project was created from my interest in learning game development. I figured to start with Java LibGDX library.
+
+  
+<img width="635" height="507" alt="{57D8571D-6343-4B22-9295-986A33A94999}" src="https://github.com/user-attachments/assets/227f8a06-a998-45f1-90c0-54a08c157c5a" />
+
+ <img width="644" height="513" alt="{0C997D05-F9F2-46AC-928C-4344D0043312}" src="https://github.com/user-attachments/assets/60e92535-05fe-4d3f-84f5-ee1a1d90563d" />
+
+
 A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
 
 This project was generated with a template including simple application launchers and an `ApplicationAdapter` extension that draws libGDX logo.
