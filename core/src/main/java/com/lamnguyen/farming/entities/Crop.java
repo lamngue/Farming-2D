@@ -13,10 +13,11 @@ public class Crop {
     public int tileY;
 
     // Status
-    private boolean isWatered;
-    private int fertilizerLevel;
-    private int growthStage;
-    private float growTimer;
+    public boolean isWatered;
+    public int fertilizerLevel;
+    public int growthStage;
+
+    public float growTimer;
     private final float growthTime;
     private static final int TILE_SIZE = 32;
 
@@ -125,5 +126,10 @@ public class Crop {
             case CORN: return ItemType.CORN_CROP;
         }
         return null;
+    }
+
+
+    public float getGrowTimer() {
+        return growTimer;
     }
 }

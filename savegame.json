@@ -1,0 +1,52 @@
+{
+player: {
+	x: 266.00214
+	y: 267.52347
+	direction: DOWN
+}
+inventory: {
+	items: {
+		CORN_SEED: 10
+		WHEAT_SEED: 5
+	}
+}
+world: {
+	crops: [
+		{
+			x: 10
+			y: 8
+			type: WHEAT
+			growthStage: 3
+			growTimer: 0.006483078
+		}
+		{
+			x: 10
+			y: 9
+			type: WHEAT
+			growthStage: 2
+			growTimer: 4.948503
+		}
+		{
+			x: 11
+			y: 9
+			type: WHEAT
+			growthStage: 3
+			growTimer: 0.0066452026
+		}
+		{
+			x: 11
+			y: 10
+			type: WHEAT
+			growthStage: 1
+			growTimer: 0.05808521
+		}
+		{
+			x: 12
+			y: 10
+			type: WHEAT
+			growthStage: 1
+			growTimer: 0.56688744
+		}
+	]
+}
+}

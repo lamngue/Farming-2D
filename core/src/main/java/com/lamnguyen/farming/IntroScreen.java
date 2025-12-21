@@ -10,116 +10,80 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 public class IntroScreen implements Screen {
+    private final MainGame game;
+    private Stage stage;
+    private Skin skin;
 
-    private final Game game;
-
-    private SpriteBatch batch;
-    private BitmapFont titleFont;
-    private BitmapFont buttonFont;
-
-    private Rectangle playButton;
-    private Texture whitePixel;
-
-    public IntroScreen(Game game) {
+    public IntroScreen(MainGame game) {
         this.game = game;
     }
 
     @Override
     public void show() {
-        batch = new SpriteBatch();
+        stage = new Stage(new ScreenViewport());
+        Gdx.input.setInputProcessor(stage);
 
-        titleFont = new BitmapFont();
-        titleFont.getData().setScale(2.5f);
+        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
 
-        buttonFont = new BitmapFont();
-        buttonFont.getData().setScale(1.5f);
+        Table table = new Table();
+        table.setFillParent(true);
+        stage.addActor(table);
 
-        // Button dimensions
-        int btnWidth = 220;
-        int btnHeight = 60;
+        Label title = new Label("Lam Farming Game", skin);
+        title.setFontScale(2f);
 
-        playButton = new Rectangle(
-            Gdx.graphics.getWidth() / 2f - btnWidth / 2f,
-            Gdx.graphics.getHeight() / 2f - btnHeight / 2f,
-            btnWidth,
-            btnHeight
-        );
+        TextButton playBtn = new TextButton("New Game", skin);
+        TextButton loadBtn = new TextButton("Load Game", skin);
+        TextButton exitBtn = new TextButton("Exit", skin);
 
-        // White pixel texture
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        whitePixel = new Texture(pixmap);
-        pixmap.dispose();
+        table.add(title).padBottom(40).row();
+        table.add(playBtn).width(200).pad(10).row();
+        table.add(loadBtn).width(200).pad(10).row();
+        table.add(exitBtn).width(200).pad(10);
+
+        playBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                game.setScreen(new GameScreen(game, false));
+            }
+        });
+
+        loadBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                game.setScreen(new GameScreen(game, true));
+            }
+        });
+
+        exitBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                Gdx.app.exit();
+            }
+        });
     }
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(0.1f, 0.6f, 0.1f, 1);
-
-        handleInput();
-
-        batch.begin();
-
-        // ---- Title ----
-        titleFont.draw(
-            batch,
-            "Lam Farming Game",
-            Gdx.graphics.getWidth() / 2f - 160,
-            Gdx.graphics.getHeight() - 100
-        );
-
-        // ---- Play Button ----
-        batch.setColor(0.2f, 0.2f, 0.2f, 1);
-        batch.draw(
-            whitePixel,
-            playButton.x,
-            playButton.y,
-            playButton.width,
-            playButton.height
-        );
-
-        batch.setColor(Color.WHITE);
-        buttonFont.draw(
-            batch,
-            "PLAY GAME",
-            playButton.x + 40,
-            playButton.y + 40
-        );
-
-        batch.end();
+        ScreenUtils.clear(0, 0, 0.1f, 1);
+        stage.act(delta);
+        stage.draw();
     }
 
-    private void handleInput() {
-        if (Gdx.input.justTouched()) {
-            Vector3 touch = new Vector3(
-                Gdx.input.getX(),
-                Gdx.input.getY(),
-                0
-            );
-
-            // Flip Y because screen coords are inverted
-            touch.y = Gdx.graphics.getHeight() - touch.y;
-
-            if (playButton.contains(touch.x, touch.y)) {
-                game.setScreen(new GameScreen(game));
-            }
-        }
-    }
-
-    @Override public void resize(int width, int height) {}
+    @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
+    @Override public void hide() {}
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void hide() {}
-
-    @Override
-    public void dispose() {
-        batch.dispose();
-        titleFont.dispose();
-        buttonFont.dispose();
-        whitePixel.dispose();
-    }
+    @Override public void dispose() { stage.dispose(); skin.dispose(); }
 }

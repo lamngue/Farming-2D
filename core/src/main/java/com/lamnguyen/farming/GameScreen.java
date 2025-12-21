@@ -1,10 +1,9 @@
 package com.lamnguyen.farming;
 
 import com.badlogic.gdx.Game;
-import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -13,8 +12,12 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.lamnguyen.farming.entities.*;
+import com.lamnguyen.farming.save.CropData;
+import com.lamnguyen.farming.save.SaveData;
+import com.lamnguyen.farming.save.SaveManager;
 import com.lamnguyen.farming.systems.InputSystem;
 import com.lamnguyen.farming.systems.RenderSystem;
 import com.lamnguyen.farming.world.WorldGrid;
@@ -23,6 +26,7 @@ public class GameScreen  implements Screen {
     private final Game game;
 
     ShapeRenderer shape;
+
 
     Player player = new Player();
     InputSystem input = new InputSystem();
@@ -38,42 +42,94 @@ public class GameScreen  implements Screen {
     private static final int DIRT_WIDTH = 5;
     private static final int DIRT_HEIGHT = 4;
     Texture whitePixelTexture;
+    private final boolean loadGame;
+    private SaveManager saveManager;
 
-    public GameScreen(Game game) {
+    public GameScreen(Game game, boolean loadGame) {
         this.game = game;
+
+        this.loadGame = loadGame;
     }
+
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public WorldGrid getWorld() {
+        return world;
+    }
+
+
+    private void startNewGame() {
+        inventory.clear();
+        inventory.add(ItemType.WHEAT_SEED, 5);
+        inventory.add(ItemType.CORN_SEED, 3);
+
+        player.x = 5 * WorldGrid.TILE_SIZE;
+        player.y = 5 * WorldGrid.TILE_SIZE;
+    }
+
+    private void applySave(SaveData data) {
+
+        // Player
+        player.x = data.player.x;
+        player.y = data.player.y;
+        player.direction = data.player.direction;
+
+        // Inventory
+        player.inventory.clear();
+        for (ObjectMap.Entry<String, Integer> e : data.inventory.items) {
+            ItemType item = ItemType.valueOf(e.key);
+            player.inventory.set(item, e.value);
+        }
+
+        // World
+        for (CropData cd : data.world.crops) {
+            CropType type = CropType.valueOf(cd.type);
+            Crop crop = new Crop(type, cd.x, cd.y);
+            crop.growthStage = cd.growthStage;
+            crop.isWatered = cd.watered;
+            crop.growTimer = cd.growTimer;
+            crop.fertilizerLevel = cd.fertilizer;
+            world.setCrop(cd.x, cd.y, crop);
+        }
+    }
+
+
 
     @Override
     public void show() {
-        shape = new ShapeRenderer();
-        batch = new SpriteBatch();
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        // Initialize inventory
-        inventory = new Inventory();
-        inventory.add(ItemType.WHEAT_SEED, 5);
-        inventory.add(ItemType.WHEAT_CROP, 2);
+        saveManager = new SaveManager();
 
-        // Load fonts
-        font = new BitmapFont();
-        font.getData().setScale(1f);
-
-        // Load crop textures
-        for (CropType crop : CropType.values()) {
-            crop.loadTextures();
-        }
-
-        // Load item textures
-        for (ItemType item : ItemType.values()) {
-            item.loadTexture();
-        }
         world = new WorldGrid(MAP_WIDTH, MAP_HEIGHT);
+        player = new Player();
+        inventory = new Inventory();
 
-
-        // Create your dirt patch
         int dirtStartY = (MAP_HEIGHT / 2) - (DIRT_HEIGHT / 2);
         int dirtStartX = (MAP_WIDTH / 2) - (DIRT_WIDTH / 2);
         world.createDirtPatch(dirtStartX, dirtStartY, DIRT_WIDTH, DIRT_HEIGHT);
+
+        // --- Load or start new ---
+        if (loadGame && saveManager.hasSave()) {
+            SaveData data = saveManager.load();
+            applySave(data);
+        } else {
+            startNewGame(); // should NOT recreate world anymore
+        }
+
+        // --- Rendering setup ---
+        shape = new ShapeRenderer();
+        batch = new SpriteBatch();
+
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        font = new BitmapFont();
+
+        for (CropType crop : CropType.values()) crop.loadTextures();
+        for (ItemType item : ItemType.values()) item.loadTexture();
+
         TextureAtlas atlas = new TextureAtlas(Gdx.files.internal("atlas/player.atlas"));
         player.loadTextures(atlas);
 
@@ -86,6 +142,9 @@ public class GameScreen  implements Screen {
 
     @Override
     public void render(float delta) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F5)) {
+            SaveManager.save(this);
+        }
         float dt = Gdx.graphics.getDeltaTime();
 
         // --- Update ---
@@ -96,10 +155,8 @@ public class GameScreen  implements Screen {
         input.updateWorld(player, world);
         input.updateSeedSelection(player);
 
-        // --- Clear screen ---
         ScreenUtils.clear(0, 0.6f, 0, 1);
 
-        // --- Render everything via RenderSystem ---
         renderSystem.renderWorld(shape, batch, world, camera);
         renderSystem.renderPlayer(batch, player);
         renderSystem.renderUI(batch, whitePixelTexture, font, player);

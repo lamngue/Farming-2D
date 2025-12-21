@@ -13,6 +13,11 @@ public class Inventory {
         items.put(item, items.getOrDefault(item, 0) + amount);
     }
 
+    public void set(ItemType item, int amount) {
+        if (item == null) return; // skip null
+        items.put(item, amount);
+    }
+
     public boolean remove(ItemType item, int amount) {
         int current = items.getOrDefault(item, 0);
         if (current < amount) return false;
@@ -27,5 +32,9 @@ public class Inventory {
 
     public Map<ItemType, Integer> getAll() {
         return items;
+    }
+
+    public void clear() {
+
     }
 }

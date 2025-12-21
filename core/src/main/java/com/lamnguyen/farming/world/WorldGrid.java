@@ -206,4 +206,9 @@ public class WorldGrid {
     }
 
 
+    public void setCrop(int x, int y, Crop crop) {
+        if (x < 0 || y < 0 || x >= width || y >= height) return;
+        crops[x][y] = crop;
+    }
+
 }
