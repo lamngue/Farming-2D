@@ -46,12 +46,12 @@ public class InputSystem {
 
         int w = player.getSprite().getRegionWidth();
         int h = player.getSprite().getRegionHeight();
-
         float centerX = player.x + w / 2f;
         float centerY = player.y + h / 2f;
 
-        int tileX = (int) (centerX / WorldGrid.TILE_SIZE);
-        int tileY = (int) (centerY / WorldGrid.TILE_SIZE);
+        // Convert to tile coordinates accounting for render offset
+        int tileX = (int) ((centerX - WorldGrid.renderOffsetX) / WorldGrid.TILE_RENDER_SIZE);
+        int tileY = (int) ((centerY - WorldGrid.renderOffsetY) / WorldGrid.TILE_RENDER_SIZE);
         tileX = MathUtils.clamp(tileX, 0, world.getWidth() - 1);
         tileY = MathUtils.clamp(tileY, 0, world.getHeight() - 1);
 

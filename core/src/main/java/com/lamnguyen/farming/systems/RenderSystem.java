@@ -17,10 +17,11 @@ public class RenderSystem {
     public void renderWorld(ShapeRenderer shape, SpriteBatch batch, WorldGrid world, OrthographicCamera camera) {
 
         // --- Filled tiles ---
-        shape.setProjectionMatrix(camera.combined);
-        shape.begin(ShapeRenderer.ShapeType.Filled);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
         world.renderFill(batch);
-        shape.end();
+        world.renderCrops(batch);
+        batch.end();
 
         // --- Crops ---
         batch.setProjectionMatrix(camera.combined);
@@ -37,11 +38,13 @@ public class RenderSystem {
     }
 
 
-    public void renderPlayer(SpriteBatch batch, Player player) {
+    public void renderPlayer(SpriteBatch batch, Player player, OrthographicCamera camera) {
+        batch.setProjectionMatrix(camera.combined);
         batch.begin();
         batch.draw(player.getSprite(), player.x, player.y);
         batch.end();
     }
+
 
     public void renderUI(SpriteBatch batch, Texture whitePixelTexture, BitmapFont font, Player player) {
         batch.begin();

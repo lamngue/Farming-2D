@@ -9,14 +9,9 @@ import com.lamnguyen.farming.entities.CropType;
 public class WorldGrid {
 
     public static final int TILE_SIZE = 32;
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
-    }
+    public static final int TILE_RENDER_SIZE = 36; // VISUAL size
+    public static float renderOffsetX;
+    public static float renderOffsetY;
 
     private int width;
     private int height;
@@ -26,7 +21,6 @@ public class WorldGrid {
 
     private boolean[][] watered;
 
-    private Texture grassTex;
     private Texture dirtTex;
 
     public WorldGrid(int width, int height) {
@@ -37,7 +31,6 @@ public class WorldGrid {
         crops = new Crop[width][height];
         watered = new boolean[width][height];
 
-//        grassTex = new Texture("grass_texture.png");
         dirtTex = new Texture("dirt_texture.png");
         // Default everything to grass
         for (int x = 0; x < width; x++) {
@@ -46,6 +39,20 @@ public class WorldGrid {
             }
         }
     }
+
+    public void setRenderOffset(float offsetX, float offsetY) {
+        renderOffsetX = offsetX;
+        renderOffsetY = offsetY;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
 
     public void createDirtPatch(int startX, int startY, int patchWidth, int patchHeight) {
         for (int x = 0; x < patchWidth; x++) {
@@ -76,13 +83,6 @@ public class WorldGrid {
         }
     }
 
-
-    public Tile getTile(int x, int y) {
-        if (!isInBounds(x, y))
-            return null;
-        return tiles[x][y];
-    }
-
     private boolean isInBounds(int x, int y) {
         return x >= 0 && y >= 0 && x < width && y < height;
     }
@@ -94,55 +94,45 @@ public class WorldGrid {
         int dirtStartX = (width / 2 - 2);
         int dirtStartY = (height / 2 - 2);
 
-        batch.begin();
-//
-//        // --- Draw grass everywhere ---
-//        for (int x = 0; x < width; x++) {
-//            for (int y = 0; y < height; y++) {
-//                batch.draw(grassTex, x * TILE_SIZE, y * TILE_SIZE);
-//            }
-//        }
-
-        // --- Draw dirt patch ---
         for (int x = dirtStartX; x < dirtStartX + 5; x++) {
             for (int y = dirtStartY; y < dirtStartY + 4; y++) {
 
                 if (!isInBounds(x, y)) continue;
 
-                if (watered[x][y]) {
-                    // tint darker
+                if (watered[x][y])
                     batch.setColor(0.6f, 0.45f, 0.3f, 1f);
-                } else {
+                else
                     batch.setColor(1f, 1f, 1f, 1f);
-                }
 
-                batch.draw(dirtTex, x * TILE_SIZE, y * TILE_SIZE);
+                batch.draw(
+                    dirtTex,
+                    renderOffsetX + x * TILE_RENDER_SIZE,
+                    renderOffsetY + y * TILE_RENDER_SIZE,
+                    TILE_RENDER_SIZE,
+                    TILE_RENDER_SIZE
+                );
             }
         }
-
-        batch.setColor(1f, 1f, 1f, 1f); // reset tint
-        batch.end();
+        batch.setColor(1,1,1,1);
     }
-
-
-    /**
-     * Draws only the grid lines around the dirt patch.
-     * Assumes ShapeRenderer is already in ShapeType.Line.
-     */
     public void renderGridLines(ShapeRenderer shape) {
         int dirtStartX = (width / 2 - 2);
         int dirtStartY = (height / 2 - 2);
 
         // draw vertical lines for the dirt patch
         for (int x = dirtStartX; x <= dirtStartX + 5; x++) {
-            float sx = x * TILE_SIZE;
-            shape.line(sx, dirtStartY * TILE_SIZE, sx, (dirtStartY + 4) * TILE_SIZE);
+            float sx = renderOffsetX + x * TILE_RENDER_SIZE;
+            float syStart = renderOffsetY + dirtStartY * TILE_RENDER_SIZE;
+            float syEnd   = renderOffsetY + (dirtStartY + 4) * TILE_RENDER_SIZE;
+            shape.line(sx, syStart, sx, syEnd);
         }
 
         // draw horizontal lines for the dirt patch
         for (int y = dirtStartY; y <= dirtStartY + 4; y++) {
-            float sy = y * TILE_SIZE;
-            shape.line(dirtStartX * TILE_SIZE, sy, (dirtStartX + 5) * TILE_SIZE, sy);
+            float sy = renderOffsetY + y * TILE_RENDER_SIZE;
+            float sxStart = renderOffsetX + dirtStartX * TILE_RENDER_SIZE;
+            float sxEnd   = renderOffsetX + (dirtStartX + 5) * TILE_RENDER_SIZE;
+            shape.line(sxStart, sy, sxEnd, sy);
         }
     }
 
@@ -210,5 +200,4 @@ public class WorldGrid {
         if (x < 0 || y < 0 || x >= width || y >= height) return;
         crops[x][y] = crop;
     }
-
 }

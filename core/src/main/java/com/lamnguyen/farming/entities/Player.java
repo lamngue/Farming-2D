@@ -132,10 +132,14 @@ public class Player {
     }
 
 
-    public void clampPosition(int worldWidthInTiles, int worldHeightInTiles) {
-        x = MathUtils.clamp(x, 0, worldWidthInTiles * WorldGrid.TILE_SIZE - 1);
-        y = MathUtils.clamp(y, 0, worldHeightInTiles * WorldGrid.TILE_SIZE - 1);
+    public void clampPosition(int mapWidth, int mapHeight) {
+        float maxX = mapWidth * WorldGrid.TILE_RENDER_SIZE - getSprite().getRegionWidth();
+        float maxY = mapHeight * WorldGrid.TILE_RENDER_SIZE - getSprite().getRegionHeight();
+
+        x = MathUtils.clamp(x, 0, maxX);
+        y = MathUtils.clamp(y, 0, maxY);
     }
+
 
 
 }

@@ -108,6 +108,13 @@ public class GameScreen  implements Screen {
 
         int dirtStartY = (MAP_HEIGHT / 2) - (DIRT_HEIGHT / 2);
         int dirtStartX = (MAP_WIDTH / 2) - (DIRT_WIDTH / 2);
+        float worldPixelWidth  = WorldGrid.TILE_RENDER_SIZE * MAP_WIDTH;
+        float worldPixelHeight = WorldGrid.TILE_RENDER_SIZE * MAP_HEIGHT;
+
+        float offsetX = (Gdx.graphics.getWidth() - worldPixelWidth) / 2f;
+        float offsetY = (Gdx.graphics.getHeight() - worldPixelHeight) / 2f;
+
+        world.setRenderOffset(offsetX, offsetY);
         world.createDirtPatch(dirtStartX, dirtStartY, DIRT_WIDTH, DIRT_HEIGHT);
 
         // --- Load or start new ---
@@ -123,7 +130,11 @@ public class GameScreen  implements Screen {
         batch = new SpriteBatch();
 
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        camera.setToOrtho(false,
+            MAP_WIDTH * WorldGrid.TILE_RENDER_SIZE,
+            MAP_HEIGHT * WorldGrid.TILE_RENDER_SIZE);
+        camera.update();
+
 
         font = new BitmapFont();
 
@@ -158,7 +169,7 @@ public class GameScreen  implements Screen {
         ScreenUtils.clear(0, 0.6f, 0, 1);
 
         renderSystem.renderWorld(shape, batch, world, camera);
-        renderSystem.renderPlayer(batch, player);
+        renderSystem.renderPlayer(batch, player, camera);
         renderSystem.renderUI(batch, whitePixelTexture, font, player);
     }
 

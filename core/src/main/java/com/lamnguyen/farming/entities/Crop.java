@@ -3,6 +3,7 @@ package com.lamnguyen.farming.entities;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.lamnguyen.farming.world.WorldGrid;
 
 public class Crop {
 
@@ -111,13 +112,15 @@ public class Crop {
     }
 
 
+
     public void render(SpriteBatch batch) {
-        Texture img = type.stages[growthStage];
-
-        float x = tileX * TILE_SIZE;
-        float y = tileY * TILE_SIZE;
-
-        batch.draw(img, x, y, TILE_SIZE, TILE_SIZE);
+        batch.draw(
+            type.stages[growthStage],
+            WorldGrid.renderOffsetX + tileX * WorldGrid.TILE_RENDER_SIZE,
+            WorldGrid.renderOffsetY + tileY * WorldGrid.TILE_RENDER_SIZE,
+            WorldGrid.TILE_RENDER_SIZE,
+            WorldGrid.TILE_RENDER_SIZE
+        );
     }
 
     public ItemType getHarvestItem() {
