@@ -4,23 +4,28 @@ import com.badlogic.gdx.graphics.Texture;
 
 public enum CropType {
 
-    WHEAT("crops/wheat_stage_", 4, 2, 10,  5f,
+    WHEAT("crops/wheat/wheat_stage_", 4, 2, 10,  5f, 15f,
         ItemType.WHEAT_SEED,
         ItemType.WHEAT_CROP),
-    CORN("crops/corn_stage_",4, 4, 20, 10f,
-        ItemType.CORN_SEED,
-        ItemType.CORN_CROP);
+    TOMATO("crops/tomato/tomato_stage_",4, 4, 20, 10f, 30f,
+        ItemType.TOMATO_SEED,
+        ItemType.TOMATO_CROP),
+
+    POTATO("crops/potato/potato_stage_",4, 6, 25, 15f, 50f,
+         ItemType.POTATO_SEED,
+         ItemType.POTATO_CROP);
 
     public final Texture[] stages;
     public final int maxGrowthStage;
     public final int buyPrice;
     public final int sellPrice;
     public final float growthTime;
+    public final float wiltTime;
     public final String basePath;
     public final ItemType seedItem;
     public final ItemType harvestItem;
-
-    CropType(String basePath, int stagesCount, int buyPrice, int sellPrice, float growthTime,
+    public Texture wiltedTexture;
+    CropType(String basePath, int stagesCount, int buyPrice, int sellPrice, float growthTime, float wiltTime,
              ItemType seedItem,
              ItemType harvestItem) {
 
@@ -31,12 +36,14 @@ public enum CropType {
         this.seedItem = seedItem;
         this.harvestItem = harvestItem;
         this.growthTime = growthTime;
+        this.wiltTime = wiltTime;
         this.stages = new Texture[stagesCount];
     }
         public void loadTextures() {
             for (int i = 0; i <= maxGrowthStage; i++) {
                 stages[i] = new Texture(basePath + i + ".png");
             }
+            wiltedTexture =  new Texture(basePath + "wilt.png");
         }
     }
 

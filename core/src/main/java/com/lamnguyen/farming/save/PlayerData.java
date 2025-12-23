@@ -6,4 +6,5 @@ public class PlayerData {
     public float x;
     public float y;
     public Player.Direction direction;
+    public int money;
 }

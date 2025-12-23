@@ -20,7 +20,11 @@ public class Crop {
 
     public float growTimer;
     private final float growthTime;
-    private static final int TILE_SIZE = 32;
+    public final float wiltTime;
+
+    private float timeFullyGrown = 0f;
+    private static final float WILT_TIME = 10f; // seconds before wilting
+    public boolean isWilted = false;
 
     // Settings
     private static final int MAX_FERTILIZER = 3;
@@ -34,10 +38,20 @@ public class Crop {
         this.growthStage = 0;
         this.growTimer = 0;
         this.growthTime = type.growthTime;
+        this.wiltTime = type.wiltTime;
     }
 
     public void update(float delta) {
-        if (isFullyGrown()) return;
+        if (isFullyGrown()) {
+            if (!isWilted) {
+                timeFullyGrown += delta;
+
+                if (timeFullyGrown >= this.wiltTime) {
+                    isWilted = true;
+                }
+            }
+            return; // stop growing once fully grown
+        }
 
         float speedBonus = 0.5f;
 
@@ -84,12 +98,10 @@ public class Crop {
         return growthStage >= type.maxGrowthStage;
     }
 
-    public int harvest() {
-        if (isFullyGrown()) {
-            return type.sellPrice + (fertilizerLevel * 5);
-        }
-        return 0;
+    public boolean canHarvest() {
+        return isFullyGrown() && !isWilted;
     }
+
 
     // --------------------------
     // Getters
@@ -107,15 +119,17 @@ public class Crop {
         return fertilizerLevel;
     }
 
-    public int getSellPrice() {
-        return type.sellPrice;
+    public Texture getTexture() {
+        if (isWilted) {
+            return type.wiltedTexture;
+        }
+        return type.stages[growthStage];
     }
-
 
 
     public void render(SpriteBatch batch) {
         batch.draw(
-            type.stages[growthStage],
+            getTexture(),
             WorldGrid.renderOffsetX + tileX * WorldGrid.TILE_RENDER_SIZE,
             WorldGrid.renderOffsetY + tileY * WorldGrid.TILE_RENDER_SIZE,
             WorldGrid.TILE_RENDER_SIZE,
@@ -126,7 +140,8 @@ public class Crop {
     public ItemType getHarvestItem() {
         switch (type) {
             case WHEAT: return ItemType.WHEAT_CROP;
-            case CORN: return ItemType.CORN_CROP;
+            case POTATO: return ItemType.POTATO_CROP;
+            case TOMATO: return ItemType.TOMATO_CROP;
         }
         return null;
     }

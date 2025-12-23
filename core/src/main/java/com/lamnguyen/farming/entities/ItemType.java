@@ -6,9 +6,10 @@ public enum ItemType {
 
     WHEAT_SEED("items/wheat_seed.png", CropType.WHEAT),
     WHEAT_CROP("items/wheat_crop.png", null),
-    CORN_SEED("items/corn_seed.png", CropType.CORN),
-    CORN_CROP("items/corn_crop.png", null);
-
+    TOMATO_SEED("items/tomato_seed.png", CropType.TOMATO),
+    TOMATO_CROP("items/tomato_crop.png", null),
+    POTATO_SEED("items/potato_seed.png", CropType.POTATO),
+    POTATO_CROP("items/potato_crop.png", null);
 
 
     public final String iconPath;

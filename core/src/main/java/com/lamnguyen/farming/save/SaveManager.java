@@ -24,7 +24,7 @@ public class SaveManager {
         data.player.x = game.getPlayer().x;
         data.player.y = game.getPlayer().y;
         data.player.direction = game.getPlayer().direction;
-
+        data.player.money = game.getPlayer().money;
         // Inventory
         data.inventory = new InventoryData();
         for (ItemType item : ItemType.values()) {

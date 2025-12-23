@@ -63,9 +63,6 @@ public class GameScreen  implements Screen {
 
     private void startNewGame() {
         inventory.clear();
-        inventory.add(ItemType.WHEAT_SEED, 5);
-        inventory.add(ItemType.CORN_SEED, 3);
-
         player.x = 5 * WorldGrid.TILE_SIZE;
         player.y = 5 * WorldGrid.TILE_SIZE;
     }
@@ -76,7 +73,7 @@ public class GameScreen  implements Screen {
         player.x = data.player.x;
         player.y = data.player.y;
         player.direction = data.player.direction;
-
+        player.money = data.player.money;
         // Inventory
         player.inventory.clear();
         for (ObjectMap.Entry<String, Integer> e : data.inventory.items) {

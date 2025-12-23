@@ -12,21 +12,21 @@ public class Player {
 
     public enum ActionState {
         NONE,
-        WATERING
+        WATERING,
+        HOEING
     }
 
     public ActionState actionState = ActionState.NONE;
 
 
     public float x, y; // now in pixels
-    public static final float SPEED = 100f; // pixels per second
+    public static final float SPEED = 120f; // pixels per second
 
     public enum Direction { UP, DOWN, LEFT, RIGHT }
     public Direction direction = Direction.DOWN;
-    public static final int WIDTH = 32;
-    public static final int HEIGHT = 32;
-    public boolean isMoving = false;
 
+    public boolean isMoving = false;
+    public int money = 0;
     private Animation<TextureRegion> walkUp;
     private Animation<TextureRegion> walkDown;
     private Animation<TextureRegion> walkLeft;
@@ -36,6 +36,11 @@ public class Player {
     private Animation<TextureRegion> waterDown;
     private Animation<TextureRegion> waterLeft;
     private Animation<TextureRegion> waterRight;
+
+    private Animation<TextureRegion> hoeUp;
+    private Animation<TextureRegion> hoeDown;
+    private Animation<TextureRegion> hoeLeft;
+    private Animation<TextureRegion> hoeRight;
 
     public Inventory inventory;
     public ItemType selectedSeed = ItemType.WHEAT_SEED;
@@ -50,8 +55,10 @@ public class Player {
         this.y = startTileY * WorldGrid.TILE_SIZE;
         inventory.add(ItemType.WHEAT_SEED, 5); // starting seeds
         inventory.add(ItemType.WHEAT_CROP, 0);
-        inventory.add(ItemType.CORN_SEED, 5); // starting seeds
-        inventory.add(ItemType.CORN_CROP, 0);
+        inventory.add(ItemType.TOMATO_SEED, 5); // starting seeds
+        inventory.add(ItemType.TOMATO_CROP, 0);
+        inventory.add(ItemType.POTATO_SEED, 5); // starting seeds
+        inventory.add(ItemType.POTATO_CROP, 0);
     }
 
     private Animation<TextureRegion> createAnim(TextureAtlas atlas, String name, float frameDuration, Animation.PlayMode mode) {
@@ -65,6 +72,10 @@ public class Player {
         return anim;
     }
 
+    public void addMoney(int amount) {
+        money += amount;
+    }
+
     public void loadTextures(TextureAtlas atlas) {
         walkUp = createAnim(atlas, "walking/walk_up", 0.15f, Animation.PlayMode.LOOP);
         walkDown = createAnim(atlas, "walking/walk_down", 0.15f, Animation.PlayMode.LOOP);
@@ -75,6 +86,11 @@ public class Player {
         waterDown = createAnim(atlas, "watering/watering_down", 0.12f, null);
         waterLeft = createAnim(atlas, "watering/watering_left", 0.12f, null);
         waterRight = createAnim(atlas, "watering/watering_right", 0.12f, null);
+
+        hoeUp = createAnim(atlas, "hoeing/hoeing_up", 0.12f, null);
+        hoeDown = createAnim(atlas, "hoeing/hoeing_down", 0.12f, null);
+        hoeLeft = createAnim(atlas, "hoeing/hoeing_left", 0.12f, null);
+        hoeRight = createAnim(atlas, "hoeing/hoeing_right", 0.12f, null);
 
         if (walkDown != null) currentFrame = walkDown.getKeyFrame(0);
     }
@@ -88,29 +104,48 @@ public class Player {
         }
     }
 
+    public void startHoeing() {
+        if (actionState != ActionState.HOEING) {
+            actionState = ActionState.HOEING;
+            animTimer = 0;
+        }
+    }
 
     public void updateAnimation(float dt) {
 
-        // WATERING animation has priority
-        if (actionState == ActionState.WATERING) {
+        if (actionState == ActionState.WATERING || actionState == ActionState.HOEING) {
 
             animTimer += dt;
 
             Animation<TextureRegion> anim = null;
-            switch (direction) {
-                case UP:    anim = waterUp; break;
-                case DOWN:  anim = waterDown; break;
-                case LEFT:  anim = waterLeft; break;
-                case RIGHT: anim = waterRight; break;
+
+            if (actionState == ActionState.WATERING) {
+                switch (direction) {
+                    case UP:    anim = waterUp; break;
+                    case DOWN:  anim = waterDown; break;
+                    case LEFT:  anim = waterLeft; break;
+                    case RIGHT: anim = waterRight; break;
+                }
+            } else { // HOEING
+                switch (direction) {
+                    case UP:    anim = hoeUp; break;
+                    case DOWN:  anim = hoeDown; break;
+                    case LEFT:  anim = hoeLeft; break;
+                    case RIGHT: anim = hoeRight; break;
+                }
             }
 
-            currentFrame = anim.getKeyFrame(animTimer);
+            if (anim != null) {
+                currentFrame = anim.getKeyFrame(animTimer);
+            }
 
-            if (anim.isAnimationFinished(animTimer)) {
+            // End of action → return to idle
+            if (anim != null && anim.isAnimationFinished(animTimer)) {
                 actionState = ActionState.NONE;
                 animTimer = 0;
             }
-            return;
+
+            return; // skip walking
         }
 
         // WALKING

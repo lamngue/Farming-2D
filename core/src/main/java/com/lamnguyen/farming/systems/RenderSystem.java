@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.lamnguyen.farming.entities.Inventory;
@@ -45,6 +46,18 @@ public class RenderSystem {
         batch.end();
     }
 
+    public void renderMoneyUI(SpriteBatch batch, BitmapFont font, Player player) {
+        String moneyText = "Money: $" + player.money;
+
+        // measure text width for centering
+        GlyphLayout layout = new GlyphLayout(font, moneyText);
+
+        float x = (Gdx.graphics.getWidth() - layout.width) / 2f;
+        float y = Gdx.graphics.getHeight() - 10;
+
+        font.draw(batch, moneyText, x, y);
+    }
+
 
     public void renderUI(SpriteBatch batch, Texture whitePixelTexture, BitmapFont font, Player player) {
         batch.begin();
@@ -61,6 +74,7 @@ public class RenderSystem {
             player.inventory,
             font
         );
+        renderMoneyUI(batch, font, player);
 
         batch.end();
     }

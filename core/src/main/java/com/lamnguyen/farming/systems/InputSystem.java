@@ -74,12 +74,23 @@ public class InputSystem {
             player.startWatering();
             world.water(tileX, tileY);
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            player.startHoeing();
+
+            Crop c = world.getCrop(tileX, tileY);
+            if (c != null && c.isWilted) {
+                world.removeCrop(tileX, tileY);
+            }
+        }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
             Crop c = world.getCrop(tileX, tileY);
-            if (c != null && c.isFullyGrown()) {
+            if (c != null && c.canHarvest()) {
                 ItemType harvest = c.getHarvestItem();
                 if (harvest != null) {
                     player.inventory.add(harvest, 1);
+                    player.addMoney(c.type.sellPrice);
+
                     world.harvest(tileX, tileY);
                 }
             }
@@ -93,9 +104,11 @@ public class InputSystem {
             player.selectedSeed = ItemType.WHEAT_SEED;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) {
-            player.selectedSeed = ItemType.CORN_SEED;
+            player.selectedSeed = ItemType.TOMATO_SEED;
         }
-
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) {
+            player.selectedSeed = ItemType.POTATO_SEED;
+        }
     }
 
 }

@@ -22,6 +22,7 @@ public class WorldGrid {
     private boolean[][] watered;
 
     private Texture dirtTex;
+    private Texture grassTex;
 
     public WorldGrid(int width, int height) {
         this.width = width;
@@ -31,7 +32,10 @@ public class WorldGrid {
         crops = new Crop[width][height];
         watered = new boolean[width][height];
 
-        dirtTex = new Texture("dirt_texture.png");
+        dirtTex = new Texture("texture/dirt_texture.png");
+        grassTex = new Texture("texture/grass_texture.png");
+        grassTex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+
         // Default everything to grass
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
@@ -90,6 +94,18 @@ public class WorldGrid {
     // -------- DRAW --------
 
     public void renderFill(SpriteBatch batch) {
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                batch.draw(
+                    grassTex,
+                    x * TILE_RENDER_SIZE,
+                    y * TILE_RENDER_SIZE,
+                    TILE_RENDER_SIZE,
+                    TILE_RENDER_SIZE
+                );
+            }
+        }
 
         int dirtStartX = (width / 2 - 2);
         int dirtStartY = (height / 2 - 2);
@@ -155,6 +171,13 @@ public class WorldGrid {
         if (watered[x][y]) crops[x][y].water();
 
         return true;
+    }
+
+    public void removeCrop(int x, int y) {
+        if (!isInBounds(x, y)) return;
+
+        crops[x][y] = null;
+        watered[x][y] = false;
     }
 
 
