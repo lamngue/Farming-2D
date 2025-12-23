@@ -50,8 +50,8 @@ public class InputSystem {
         float centerY = player.y + h / 2f;
 
         // Convert to tile coordinates accounting for render offset
-        int tileX = (int) ((centerX - WorldGrid.renderOffsetX) / WorldGrid.TILE_RENDER_SIZE);
-        int tileY = (int) ((centerY - WorldGrid.renderOffsetY) / WorldGrid.TILE_RENDER_SIZE);
+        int tileX = (int) ((centerX) / WorldGrid.TILE_RENDER_SIZE);
+        int tileY = (int) ((centerY) / WorldGrid.TILE_RENDER_SIZE);
         tileX = MathUtils.clamp(tileX, 0, world.getWidth() - 1);
         tileY = MathUtils.clamp(tileY, 0, world.getHeight() - 1);
 

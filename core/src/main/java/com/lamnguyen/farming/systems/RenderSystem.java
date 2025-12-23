@@ -46,105 +46,81 @@ public class RenderSystem {
         batch.end();
     }
 
-    public void renderMoneyUI(SpriteBatch batch, BitmapFont font, Player player) {
-        String moneyText = "Money: $" + player.money;
-
-        // measure text width for centering
-        GlyphLayout layout = new GlyphLayout(font, moneyText);
-
-        float x = (Gdx.graphics.getWidth() - layout.width) / 2f;
-        float y = Gdx.graphics.getHeight() - 10;
-
-        font.draw(batch, moneyText, x, y);
-    }
-
-
     public void renderUI(SpriteBatch batch, Texture whitePixelTexture, BitmapFont font, Player player) {
+        // Use screen coordinates
+        OrthographicCamera uiCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        uiCamera.setToOrtho(false); // origin bottom-left
+        batch.setProjectionMatrix(uiCamera.combined);
+
         batch.begin();
-        renderSeedHotbar(
-            whitePixelTexture,
-            batch,
-            player.inventory,
-            font,
-            player.selectedSeed   // highlight currently active seed
-        );
-        renderCropStorage(
-            whitePixelTexture,
-            batch,
-            player.inventory,
-            font
-        );
-        renderMoneyUI(batch, font, player);
+
+        // --- Money at top-center ---
+        String moneyText = "Money: $" + player.money;
+        GlyphLayout layout = new GlyphLayout(font, moneyText);
+        float moneyX = (Gdx.graphics.getWidth() - layout.width) / 2f;
+        float moneyY = Gdx.graphics.getHeight() - 10; // 10px from top
+        font.draw(batch, moneyText, moneyX, moneyY);
+
+        // --- Seed hotbar at top-left ---
+        renderSeedHotbar(whitePixelTexture, batch, player.inventory, font, player.selectedSeed);
+
+        // --- Crop storage at top-right ---
+        renderCropStorage(whitePixelTexture, batch, player.inventory, font);
 
         batch.end();
     }
 
-    public void renderSeedHotbar(
-        Texture whitePixelTexture,
-        SpriteBatch batch,
-        Inventory inventory,
-        BitmapFont font,
-        ItemType selectedSeed
-    ) {
+
+    private void renderSeedHotbar(Texture whitePixelTexture, SpriteBatch batch, Inventory inventory, BitmapFont font, ItemType selectedSeed) {
         int boxSize = 48;
         int padding = 8;
-        int x = 10;
-        int y = Gdx.graphics.getHeight() - boxSize - 10;
+        int x = 10; // left padding
+        int y = Gdx.graphics.getHeight() - boxSize - 10; // top-left corner
 
         for (ItemType item : ItemType.values()) {
-
             if (!item.isSeed()) continue;
             int amount = inventory.get(item);
             if (amount <= 0) continue;
 
             // selection highlight
-            if (item == selectedSeed)
-                batch.setColor(0.9f, 0.9f, 0.3f, 1);
-            else
-                batch.setColor(0.15f, 0.15f, 0.15f, 1);
-
+            if (item == selectedSeed) {
+                batch.setColor(0.9f,0.9f,0.3f,1f);
+            } else {
+                batch.setColor(0.15f,0.15f,0.15f,1f);
+            }
             batch.draw(whitePixelTexture, x, y, boxSize, boxSize);
             batch.setColor(Color.WHITE);
 
             batch.draw(item.icon, x + 4, y + 4, boxSize - 8, boxSize - 8);
-
-            font.draw(batch, String.valueOf(amount),
-                x + boxSize - 12, y + 14);
+            font.draw(batch, String.valueOf(amount), x + boxSize - 12, y + 14);
 
             x += boxSize + padding;
         }
     }
 
-    public void renderCropStorage(
-        Texture whitePixelTexture,
-        SpriteBatch batch,
-        Inventory inventory,
-        BitmapFont font
-    ) {
+    private void renderCropStorage(Texture whitePixelTexture, SpriteBatch batch, Inventory inventory, BitmapFont font) {
         int boxSize = 48;
         int padding = 6;
 
-        int x = Gdx.graphics.getWidth() - boxSize - 10;
-        int y = Gdx.graphics.getHeight() - boxSize - 10;
+        int x = Gdx.graphics.getWidth() - boxSize - 10; // right-aligned
+        int y = Gdx.graphics.getHeight() - boxSize - 10; // top-right
 
         for (ItemType item : ItemType.values()) {
-
-            if (item.isSeed()) continue;            // NOT seeds
+            if (item.isSeed()) continue;
             int amount = inventory.get(item);
-            if (amount <= 0) continue;              // only owned items
+            if (amount <= 0) continue;
 
-            batch.setColor(0.15f, 0.15f, 0.15f, 1);
+            batch.setColor(0.15f,0.15f,0.15f,1f);
             batch.draw(whitePixelTexture, x, y, boxSize, boxSize);
             batch.setColor(Color.WHITE);
 
             batch.draw(item.icon, x + 4, y + 4, boxSize - 8, boxSize - 8);
+            font.draw(batch, String.valueOf(amount), x + boxSize - 12, y + 14);
 
-            font.draw(batch, String.valueOf(amount),
-                x + boxSize - 12, y + 14);
-
-            y -= boxSize + padding;
+            y -= boxSize + padding; // stack downwards
         }
     }
+
 
 }
 

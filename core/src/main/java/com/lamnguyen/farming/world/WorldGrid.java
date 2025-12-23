@@ -10,8 +10,8 @@ public class WorldGrid {
 
     public static final int TILE_SIZE = 32;
     public static final int TILE_RENDER_SIZE = 36; // VISUAL size
-    public static float renderOffsetX;
-    public static float renderOffsetY;
+    private static final int DIRT_WIDTH = 5;
+    private static final int DIRT_HEIGHT = 4;
 
     private int width;
     private int height;
@@ -44,10 +44,6 @@ public class WorldGrid {
         }
     }
 
-    public void setRenderOffset(float offsetX, float offsetY) {
-        renderOffsetX = offsetX;
-        renderOffsetY = offsetY;
-    }
 
     public int getWidth() {
         return width;
@@ -95,6 +91,7 @@ public class WorldGrid {
 
     public void renderFill(SpriteBatch batch) {
 
+        // grass
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 batch.draw(
@@ -107,47 +104,45 @@ public class WorldGrid {
             }
         }
 
-        int dirtStartX = (width / 2 - 2);
-        int dirtStartY = (height / 2 - 2);
+        // dirt
+        int dirtStartX = (width - DIRT_WIDTH) / 2;
+        int dirtStartY = (height - DIRT_HEIGHT) / 2;
 
-        for (int x = dirtStartX; x < dirtStartX + 5; x++) {
-            for (int y = dirtStartY; y < dirtStartY + 4; y++) {
-
+        for (int x = dirtStartX; x < dirtStartX + DIRT_WIDTH; x++) {
+            for (int y = dirtStartY; y < dirtStartY + DIRT_HEIGHT; y++) {
                 if (!isInBounds(x, y)) continue;
-
                 if (watered[x][y])
                     batch.setColor(0.6f, 0.45f, 0.3f, 1f);
                 else
                     batch.setColor(1f, 1f, 1f, 1f);
-
                 batch.draw(
                     dirtTex,
-                    renderOffsetX + x * TILE_RENDER_SIZE,
-                    renderOffsetY + y * TILE_RENDER_SIZE,
+                    x * TILE_RENDER_SIZE,
+                    y * TILE_RENDER_SIZE,
                     TILE_RENDER_SIZE,
                     TILE_RENDER_SIZE
                 );
             }
         }
-        batch.setColor(1,1,1,1);
     }
+
     public void renderGridLines(ShapeRenderer shape) {
         int dirtStartX = (width / 2 - 2);
         int dirtStartY = (height / 2 - 2);
 
         // draw vertical lines for the dirt patch
         for (int x = dirtStartX; x <= dirtStartX + 5; x++) {
-            float sx = renderOffsetX + x * TILE_RENDER_SIZE;
-            float syStart = renderOffsetY + dirtStartY * TILE_RENDER_SIZE;
-            float syEnd   = renderOffsetY + (dirtStartY + 4) * TILE_RENDER_SIZE;
+            float sx =  x * TILE_RENDER_SIZE;
+            float syStart =  dirtStartY * TILE_RENDER_SIZE;
+            float syEnd  =  (dirtStartY + 4) * TILE_RENDER_SIZE;
             shape.line(sx, syStart, sx, syEnd);
         }
 
         // draw horizontal lines for the dirt patch
         for (int y = dirtStartY; y <= dirtStartY + 4; y++) {
-            float sy = renderOffsetY + y * TILE_RENDER_SIZE;
-            float sxStart = renderOffsetX + dirtStartX * TILE_RENDER_SIZE;
-            float sxEnd   = renderOffsetX + (dirtStartX + 5) * TILE_RENDER_SIZE;
+            float sy =  y * TILE_RENDER_SIZE;
+            float sxStart = dirtStartX * TILE_RENDER_SIZE;
+            float sxEnd   = (dirtStartX + 5) * TILE_RENDER_SIZE;
             shape.line(sxStart, sy, sxEnd, sy);
         }
     }

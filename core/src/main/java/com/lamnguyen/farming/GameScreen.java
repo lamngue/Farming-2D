@@ -99,48 +99,47 @@ public class GameScreen  implements Screen {
     public void show() {
         saveManager = new SaveManager();
 
+        // --- World and Player ---
         world = new WorldGrid(MAP_WIDTH, MAP_HEIGHT);
         player = new Player();
         inventory = new Inventory();
 
-        int dirtStartY = (MAP_HEIGHT / 2) - (DIRT_HEIGHT / 2);
-        int dirtStartX = (MAP_WIDTH / 2) - (DIRT_WIDTH / 2);
-        float worldPixelWidth  = WorldGrid.TILE_RENDER_SIZE * MAP_WIDTH;
-        float worldPixelHeight = WorldGrid.TILE_RENDER_SIZE * MAP_HEIGHT;
-
-        float offsetX = (Gdx.graphics.getWidth() - worldPixelWidth) / 2f;
-        float offsetY = (Gdx.graphics.getHeight() - worldPixelHeight) / 2f;
-
-        world.setRenderOffset(offsetX, offsetY);
+        // Center dirt patch
+        int dirtStartY = (MAP_HEIGHT - DIRT_HEIGHT) / 2;
+        int dirtStartX = (MAP_WIDTH - DIRT_WIDTH) / 2;
         world.createDirtPatch(dirtStartX, dirtStartY, DIRT_WIDTH, DIRT_HEIGHT);
 
-        // --- Load or start new ---
+        // Load save or start new game
         if (loadGame && saveManager.hasSave()) {
             SaveData data = saveManager.load();
             applySave(data);
         } else {
-            startNewGame(); // should NOT recreate world anymore
+            startNewGame();
         }
 
         // --- Rendering setup ---
         shape = new ShapeRenderer();
         batch = new SpriteBatch();
 
+        // World camera
         camera = new OrthographicCamera();
         camera.setToOrtho(false,
             MAP_WIDTH * WorldGrid.TILE_RENDER_SIZE,
-            MAP_HEIGHT * WorldGrid.TILE_RENDER_SIZE);
+            MAP_HEIGHT * WorldGrid.TILE_RENDER_SIZE
+        );
+        camera.position.set(camera.viewportWidth / 2f, camera.viewportHeight / 2f, 0);
         camera.update();
-
 
         font = new BitmapFont();
 
+        // Load textures
         for (CropType crop : CropType.values()) crop.loadTextures();
         for (ItemType item : ItemType.values()) item.loadTexture();
 
         TextureAtlas atlas = new TextureAtlas(Gdx.files.internal("atlas/player.atlas"));
         player.loadTextures(atlas);
 
+        // White pixel for UI boxes
         Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pix.setColor(Color.WHITE);
         pix.fill();
@@ -148,11 +147,14 @@ public class GameScreen  implements Screen {
         pix.dispose();
     }
 
+
     @Override
     public void render(float delta) {
+        // --- Save ---
         if (Gdx.input.isKeyJustPressed(Input.Keys.F5)) {
             SaveManager.save(this);
         }
+
         float dt = Gdx.graphics.getDeltaTime();
 
         // --- Update ---
@@ -165,15 +167,32 @@ public class GameScreen  implements Screen {
 
         ScreenUtils.clear(0, 0.6f, 0, 1);
 
+        // --- Render World ---
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
+        shape.setProjectionMatrix(camera.combined);
+
+        // World tiles, crops, grid lines
         renderSystem.renderWorld(shape, batch, world, camera);
+
+        // Player
         renderSystem.renderPlayer(batch, player, camera);
+
+        // --- Render UI in screen coordinates ---
         renderSystem.renderUI(batch, whitePixelTexture, font, player);
     }
 
+
     @Override
     public void resize(int width, int height) {
-        camera.setToOrtho(false, width, height);
-
+        camera.viewportWidth  = MAP_WIDTH * WorldGrid.TILE_RENDER_SIZE;
+        camera.viewportHeight = MAP_HEIGHT * WorldGrid.TILE_RENDER_SIZE;
+        camera.position.set(
+            camera.viewportWidth / 2f,
+            camera.viewportHeight / 2f,
+            0
+        );
+        camera.update();
     }
 
     @Override

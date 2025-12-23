@@ -130,8 +130,8 @@ public class Crop {
     public void render(SpriteBatch batch) {
         batch.draw(
             getTexture(),
-            WorldGrid.renderOffsetX + tileX * WorldGrid.TILE_RENDER_SIZE,
-            WorldGrid.renderOffsetY + tileY * WorldGrid.TILE_RENDER_SIZE,
+            tileX * WorldGrid.TILE_RENDER_SIZE,
+            tileY * WorldGrid.TILE_RENDER_SIZE,
             WorldGrid.TILE_RENDER_SIZE,
             WorldGrid.TILE_RENDER_SIZE
         );
