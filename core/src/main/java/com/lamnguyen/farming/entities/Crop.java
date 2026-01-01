@@ -130,12 +130,13 @@ public class Crop {
     public void render(SpriteBatch batch) {
         batch.draw(
             getTexture(),
-            tileX * WorldGrid.TILE_RENDER_SIZE,
-            tileY * WorldGrid.TILE_RENDER_SIZE,
-            WorldGrid.TILE_RENDER_SIZE,
-            WorldGrid.TILE_RENDER_SIZE
+            tileX * WorldGrid.TILE_SIZE,
+            tileY * WorldGrid.TILE_SIZE,
+            WorldGrid.TILE_SIZE,
+            WorldGrid.TILE_SIZE
         );
     }
+
 
     public ItemType getHarvestItem() {
         switch (type) {

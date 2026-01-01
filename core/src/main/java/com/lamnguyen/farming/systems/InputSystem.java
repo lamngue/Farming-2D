@@ -44,39 +44,31 @@ public class InputSystem {
 
     public void updateWorld(Player player, WorldGrid world) {
 
-        int w = player.getSprite().getRegionWidth();
-        int h = player.getSprite().getRegionHeight();
-        float centerX = player.x + w / 2f;
-        float centerY = player.y + h / 2f;
+        float centerX = player.x + player.getWidth() / 2f;
+        float centerY = player.y + player.getHeight() / 2f;
 
-        // Convert to tile coordinates accounting for render offset
-        int tileX = (int) ((centerX) / WorldGrid.TILE_RENDER_SIZE);
-        int tileY = (int) ((centerY) / WorldGrid.TILE_RENDER_SIZE);
+        int tileX = (int)(centerX / WorldGrid.TILE_SIZE);
+        int tileY = (int)(centerY / WorldGrid.TILE_SIZE);
+
         tileX = MathUtils.clamp(tileX, 0, world.getWidth() - 1);
         tileY = MathUtils.clamp(tileY, 0, world.getHeight() - 1);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
             ItemType seed = player.selectedSeed;
-
-            if (!seed.isSeed()) return;
-
-            if (player.inventory.get(seed) > 0) {
-                CropType crop = seed.cropType;
-
-                // Plant crop and check success
-                boolean planted = world.plantCrop(tileX, tileY, crop);
-                if (planted) {
+            if (seed.isSeed() && player.inventory.get(seed) > 0) {
+                if (world.plantCrop(tileX, tileY, seed.cropType)) {
                     player.inventory.remove(seed, 1);
                 }
             }
         }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
             player.startWatering();
             world.water(tileX, tileY);
         }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             player.startHoeing();
-
             Crop c = world.getCrop(tileX, tileY);
             if (c != null && c.isWilted) {
                 world.removeCrop(tileX, tileY);
@@ -90,13 +82,12 @@ public class InputSystem {
                 if (harvest != null) {
                     player.inventory.add(harvest, 1);
                     player.addMoney(c.type.sellPrice);
-
                     world.harvest(tileX, tileY);
                 }
             }
-
         }
     }
+
 
     public void updateSeedSelection(Player player) {
 

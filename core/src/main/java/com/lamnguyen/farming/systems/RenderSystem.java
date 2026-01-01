@@ -12,17 +12,24 @@ import com.lamnguyen.farming.entities.Inventory;
 import com.lamnguyen.farming.entities.ItemType;
 import com.lamnguyen.farming.entities.Player;
 import com.lamnguyen.farming.world.WorldGrid;
+import com.lamnguyen.farming.world.WorldType;
 
 public class RenderSystem {
 
-    public void renderWorld(ShapeRenderer shape, SpriteBatch batch, WorldGrid world, OrthographicCamera camera) {
+    private static final int SEED_BOX_SIZE = 64;
+    private static final int STORAGE_BOX_SIZE = 64;
+    private static final int BOX_PADDING = 10;
+
+    public void renderWorld(ShapeRenderer shape, SpriteBatch batch, WorldGrid world, OrthographicCamera camera,  WorldType worldType) {
 
         // --- Filled tiles ---
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         world.renderFill(batch);
+        world.renderExitArrow(batch, worldType);
         world.renderCrops(batch);
         batch.end();
+
 
         // --- Crops ---
         batch.setProjectionMatrix(camera.combined);
@@ -71,54 +78,94 @@ public class RenderSystem {
     }
 
 
-    private void renderSeedHotbar(Texture whitePixelTexture, SpriteBatch batch, Inventory inventory, BitmapFont font, ItemType selectedSeed) {
-        int boxSize = 48;
-        int padding = 8;
-        int x = 10; // left padding
-        int y = Gdx.graphics.getHeight() - boxSize - 10; // top-left corner
+    public void renderSeedHotbar(
+        Texture whitePixelTexture,
+        SpriteBatch batch,
+        Inventory inventory,
+        BitmapFont font,
+        ItemType selectedSeed
+    ) {
+        int boxSize = SEED_BOX_SIZE;
+        int padding = BOX_PADDING;
+
+        int x = 16;
+        int y = Gdx.graphics.getHeight() - boxSize - 16;
 
         for (ItemType item : ItemType.values()) {
             if (!item.isSeed()) continue;
+
             int amount = inventory.get(item);
             if (amount <= 0) continue;
 
-            // selection highlight
-            if (item == selectedSeed) {
-                batch.setColor(0.9f,0.9f,0.3f,1f);
-            } else {
-                batch.setColor(0.15f,0.15f,0.15f,1f);
-            }
+            batch.setColor(item == selectedSeed
+                ? new Color(0.9f, 0.9f, 0.3f, 1)
+                : new Color(0.15f, 0.15f, 0.15f, 1));
+
             batch.draw(whitePixelTexture, x, y, boxSize, boxSize);
             batch.setColor(Color.WHITE);
 
-            batch.draw(item.icon, x + 4, y + 4, boxSize - 8, boxSize - 8);
-            font.draw(batch, String.valueOf(amount), x + boxSize - 12, y + 14);
+            batch.draw(item.icon,
+                x + 6,
+                y + 6,
+                boxSize - 12,
+                boxSize - 12
+            );
+
+            font.draw(batch,
+                String.valueOf(amount),
+                x + boxSize - 18,
+                y + 20
+            );
 
             x += boxSize + padding;
         }
     }
 
-    private void renderCropStorage(Texture whitePixelTexture, SpriteBatch batch, Inventory inventory, BitmapFont font) {
-        int boxSize = 48;
-        int padding = 6;
 
-        int x = Gdx.graphics.getWidth() - boxSize - 10; // right-aligned
-        int y = Gdx.graphics.getHeight() - boxSize - 10; // top-right
+    public void renderCropStorage(
+        Texture whitePixelTexture,
+        SpriteBatch batch,
+        Inventory inventory,
+        BitmapFont font
+    ) {
+        int boxSize = STORAGE_BOX_SIZE;
+        int padding = BOX_PADDING;
+
+        int x = Gdx.graphics.getWidth() - boxSize - 16;
+        int y = Gdx.graphics.getHeight() - boxSize - 16;
 
         for (ItemType item : ItemType.values()) {
             if (item.isSeed()) continue;
+
             int amount = inventory.get(item);
             if (amount <= 0) continue;
 
-            batch.setColor(0.15f,0.15f,0.15f,1f);
+            batch.setColor(0.15f, 0.15f, 0.15f, 1);
             batch.draw(whitePixelTexture, x, y, boxSize, boxSize);
             batch.setColor(Color.WHITE);
 
-            batch.draw(item.icon, x + 4, y + 4, boxSize - 8, boxSize - 8);
-            font.draw(batch, String.valueOf(amount), x + boxSize - 12, y + 14);
+            batch.draw(item.icon,
+                x + 6,
+                y + 6,
+                boxSize - 12,
+                boxSize - 12
+            );
 
-            y -= boxSize + padding; // stack downwards
+            font.draw(batch,
+                String.valueOf(amount),
+                x + boxSize - 18,
+                y + 20
+            );
+
+            y -= boxSize + padding;
         }
+    }
+
+    public void renderWorldExit(SpriteBatch batch, Texture arrowTex, WorldGrid world) {
+        float x = world.getWidth() * WorldGrid.TILE_SIZE - 32;
+        float y = (world.getHeight() * WorldGrid.TILE_SIZE) / 2f - 16;
+
+        batch.draw(arrowTex, x, y, 32, 32);
     }
 
 

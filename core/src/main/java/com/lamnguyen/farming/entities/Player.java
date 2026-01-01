@@ -1,5 +1,6 @@
 package com.lamnguyen.farming.entities;
 
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -167,14 +168,26 @@ public class Player {
     }
 
 
-    public void clampPosition(int mapWidth, int mapHeight) {
-        float maxX = mapWidth * WorldGrid.TILE_RENDER_SIZE - getSprite().getRegionWidth();
-        float maxY = mapHeight * WorldGrid.TILE_RENDER_SIZE - getSprite().getRegionHeight();
+    public void clampPosition(int worldWidthTiles, int worldHeightTiles) {
+
+        float worldWidth  = worldWidthTiles  * WorldGrid.TILE_SIZE;
+        float worldHeight = worldHeightTiles * WorldGrid.TILE_SIZE;
+
+        float maxX = worldWidth  - getWidth();
+        float maxY = worldHeight - getHeight();
 
         x = MathUtils.clamp(x, 0, maxX);
         y = MathUtils.clamp(y, 0, maxY);
     }
 
 
+
+    public int getHeight() {
+        return getSprite().getRegionHeight();
+    }
+
+    public int getWidth() {
+        return getSprite().getRegionWidth();
+    }
 
 }

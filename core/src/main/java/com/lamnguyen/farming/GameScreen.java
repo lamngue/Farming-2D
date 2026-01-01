@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.lamnguyen.farming.entities.*;
@@ -20,10 +21,13 @@ import com.lamnguyen.farming.save.SaveData;
 import com.lamnguyen.farming.save.SaveManager;
 import com.lamnguyen.farming.systems.InputSystem;
 import com.lamnguyen.farming.systems.RenderSystem;
+import com.lamnguyen.farming.utils.CameraUtils;
 import com.lamnguyen.farming.world.WorldGrid;
+import com.lamnguyen.farming.world.WorldType;
 
 public class GameScreen  implements Screen {
     private final Game game;
+    private final WorldType worldType;
 
     ShapeRenderer shape;
 
@@ -44,13 +48,13 @@ public class GameScreen  implements Screen {
     Texture whitePixelTexture;
     private final boolean loadGame;
     private SaveManager saveManager;
+    private boolean transitioning = false;
 
-    public GameScreen(Game game, boolean loadGame) {
+    public GameScreen(Game game, boolean loadGame, WorldType type) {
         this.game = game;
-
         this.loadGame = loadGame;
+        this.worldType = type;
     }
-
 
     public Player getPlayer() {
         return player;
@@ -97,40 +101,51 @@ public class GameScreen  implements Screen {
 
     @Override
     public void show() {
+        transitioning = false;
+
         saveManager = new SaveManager();
 
-        // --- World and Player ---
+        // --- Create world ONCE ---
         world = new WorldGrid(MAP_WIDTH, MAP_HEIGHT);
         player = new Player();
         inventory = new Inventory();
 
-        // Center dirt patch
         int dirtStartY = (MAP_HEIGHT - DIRT_HEIGHT) / 2;
         int dirtStartX = (MAP_WIDTH - DIRT_WIDTH) / 2;
-        world.createDirtPatch(dirtStartX, dirtStartY, DIRT_WIDTH, DIRT_HEIGHT);
 
-        // Load save or start new game
-        if (loadGame && saveManager.hasSave()) {
+        // --- World type setup ---
+        if (worldType == WorldType.FARM) {
+
+            world.createDirtPatch(dirtStartX, dirtStartY, DIRT_WIDTH, DIRT_HEIGHT);
+
+            player.x = 5 * WorldGrid.TILE_SIZE;
+            player.y = 5 * WorldGrid.TILE_SIZE;
+
+        } else if (worldType == WorldType.GREEN_FIELD) {
+
+            world.fillWithGrassOnly();
+
+            player.x = WorldGrid.TILE_SIZE * 2f;
+            player.y = (MAP_HEIGHT * WorldGrid.TILE_SIZE) / 2f;
+
+        }
+
+        // --- Load save OR start fresh ---
+        if (loadGame && saveManager.hasSave() && worldType == WorldType.FARM) {
             SaveData data = saveManager.load();
             applySave(data);
-        } else {
-            startNewGame();
         }
 
         // --- Rendering setup ---
         shape = new ShapeRenderer();
         batch = new SpriteBatch();
-
-        // World camera
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false,
-            MAP_WIDTH * WorldGrid.TILE_RENDER_SIZE,
-            MAP_HEIGHT * WorldGrid.TILE_RENDER_SIZE
-        );
-        camera.position.set(camera.viewportWidth / 2f, camera.viewportHeight / 2f, 0);
-        camera.update();
-
         font = new BitmapFont();
+
+        // Camera (DO NOT recreate world after this)
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, 640, 360);
+        camera.zoom = 0.8f;
+        camera.update();
 
         // Load textures
         for (CropType crop : CropType.values()) crop.loadTextures();
@@ -139,12 +154,14 @@ public class GameScreen  implements Screen {
         TextureAtlas atlas = new TextureAtlas(Gdx.files.internal("atlas/player.atlas"));
         player.loadTextures(atlas);
 
-        // White pixel for UI boxes
+        // White pixel
         Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pix.setColor(Color.WHITE);
         pix.fill();
         whitePixelTexture = new Texture(pix);
         pix.dispose();
+
+        Gdx.app.log("WORLD", "WorldType = " + worldType + ", crops loaded = " + (worldType == WorldType.FARM));
     }
 
 
@@ -154,14 +171,24 @@ public class GameScreen  implements Screen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.F5)) {
             SaveManager.save(this);
         }
+        font.getData().setScale(1.2f);
 
         float dt = Gdx.graphics.getDeltaTime();
 
         // --- Update ---
         input.updatePlayer(player, dt);
-        player.clampPosition(world.getWidth() - 1, world.getHeight() - 1);
+        player.clampPosition(world.getWidth(), world.getHeight());
         world.update(dt);
         player.updateAnimation(dt);
+
+        float targetX = player.x + player.getWidth() / 2f;
+        float targetY = player.y + player.getHeight() / 2f;
+
+        float smoothing = 0.1f;
+
+        CameraUtils.smoothFollow(camera, targetX, targetY, smoothing);
+        CameraUtils.clampCamera(camera, world.getWidth(), world.getHeight());
+        camera.update();
         input.updateWorld(player, world);
         input.updateSeedSelection(player);
 
@@ -173,26 +200,44 @@ public class GameScreen  implements Screen {
         shape.setProjectionMatrix(camera.combined);
 
         // World tiles, crops, grid lines
-        renderSystem.renderWorld(shape, batch, world, camera);
+        renderSystem.renderWorld(shape, batch, world, camera, worldType);
 
         // Player
         renderSystem.renderPlayer(batch, player, camera);
 
         // --- Render UI in screen coordinates ---
         renderSystem.renderUI(batch, whitePixelTexture, font, player);
+
+        Rectangle exitZone = world.getExitZone(worldType);
+        Rectangle playerRect = new Rectangle(
+            player.x,
+            player.y,
+            player.getSprite().getRegionWidth(),
+            player.getSprite().getRegionHeight()
+        );
+
+        if (exitZone.overlaps(playerRect) && !transitioning) {
+            transitioning = true;
+
+            WorldType next =
+                (worldType == WorldType.FARM)
+                    ? WorldType.GREEN_FIELD
+                    : WorldType.FARM;
+
+            game.setScreen(new LoadingScreen(game, next));
+        }
+
+
     }
 
 
     @Override
     public void resize(int width, int height) {
-        camera.viewportWidth  = MAP_WIDTH * WorldGrid.TILE_RENDER_SIZE;
-        camera.viewportHeight = MAP_HEIGHT * WorldGrid.TILE_RENDER_SIZE;
-        camera.position.set(
-            camera.viewportWidth / 2f,
-            camera.viewportHeight / 2f,
-            0
-        );
+        camera.setToOrtho(false, 640, 480);
+        camera.zoom = 0.8f;
+
         camera.update();
+
     }
 
     @Override

@@ -1,23 +1,29 @@
 package com.lamnguyen.farming.world;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Rectangle;
 import com.lamnguyen.farming.entities.Crop;
 import com.lamnguyen.farming.entities.CropType;
 
 public class WorldGrid {
-
+    private Rectangle leftExit;
+    private Rectangle rightExit;
+    private Texture arrowLeft;
+    private Texture arrowRight;
     public static final int TILE_SIZE = 32;
-    public static final int TILE_RENDER_SIZE = 36; // VISUAL size
     private static final int DIRT_WIDTH = 5;
     private static final int DIRT_HEIGHT = 4;
-
+    private static final int EXIT_WIDTH = 32;
+    private static final int EXIT_HEIGHT = 96;
     private int width;
     private int height;
     private Tile[][] tiles;
     private Crop[][] crops;
 
+    private boolean hasDirtPatch = false;
 
     private boolean[][] watered;
 
@@ -42,7 +48,33 @@ public class WorldGrid {
                 tiles[x][y] = new Tile(x, y, TileType.GRASS);
             }
         }
+        arrowLeft  = new Texture("ui/arrow_left.png");
+        arrowRight = new Texture("ui/arrow_right.png");
+        createExitZones();
+
     }
+
+    private void createExitZones() {
+        float tile = TILE_SIZE;
+
+        // LEFT exit (for GREEN_FIELD → FARM)
+        leftExit = new Rectangle(
+            0,
+            (height * tile) / 2f - tile,
+            tile,
+            tile * 2
+        );
+
+        // RIGHT exit (for FARM → GREEN_FIELD)
+        rightExit = new Rectangle(
+            width * tile - tile,
+            (height * tile) / 2f - tile,
+            tile,
+            tile * 2
+        );
+    }
+
+
 
 
     public int getWidth() {
@@ -55,6 +87,7 @@ public class WorldGrid {
 
 
     public void createDirtPatch(int startX, int startY, int patchWidth, int patchHeight) {
+        hasDirtPatch = true;
         for (int x = 0; x < patchWidth; x++) {
             for (int y = 0; y < patchHeight; y++) {
                 int gridX = startX + x;
@@ -96,13 +129,14 @@ public class WorldGrid {
             for (int y = 0; y < height; y++) {
                 batch.draw(
                     grassTex,
-                    x * TILE_RENDER_SIZE,
-                    y * TILE_RENDER_SIZE,
-                    TILE_RENDER_SIZE,
-                    TILE_RENDER_SIZE
+                    x * TILE_SIZE,
+                    y * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE
                 );
             }
         }
+        if (!hasDirtPatch) return;
 
         // dirt
         int dirtStartX = (width - DIRT_WIDTH) / 2;
@@ -110,42 +144,63 @@ public class WorldGrid {
 
         for (int x = dirtStartX; x < dirtStartX + DIRT_WIDTH; x++) {
             for (int y = dirtStartY; y < dirtStartY + DIRT_HEIGHT; y++) {
+
                 if (!isInBounds(x, y)) continue;
-                if (watered[x][y])
-                    batch.setColor(0.6f, 0.45f, 0.3f, 1f);
-                else
-                    batch.setColor(1f, 1f, 1f, 1f);
+
+                batch.setColor(watered[x][y] ?
+                    new Color(0.6f, 0.45f, 0.3f, 1f) :
+                    Color.WHITE
+                );
+
                 batch.draw(
                     dirtTex,
-                    x * TILE_RENDER_SIZE,
-                    y * TILE_RENDER_SIZE,
-                    TILE_RENDER_SIZE,
-                    TILE_RENDER_SIZE
+                    x * TILE_SIZE,
+                    y * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE
                 );
             }
         }
+
+        batch.setColor(Color.WHITE);
     }
+
+    public void renderExitArrow(SpriteBatch batch, WorldType type) {
+        Rectangle exit = getExitZone(type);
+
+        Texture arrow = (type == WorldType.FARM)
+            ? arrowRight
+            : arrowLeft;
+
+        batch.draw(
+            arrow,
+            exit.x,
+            exit.y,
+            exit.width,
+            exit.height
+        );
+    }
+
+
 
     public void renderGridLines(ShapeRenderer shape) {
-        int dirtStartX = (width / 2 - 2);
-        int dirtStartY = (height / 2 - 2);
+        if (!hasDirtPatch) return;
 
-        // draw vertical lines for the dirt patch
-        for (int x = dirtStartX; x <= dirtStartX + 5; x++) {
-            float sx =  x * TILE_RENDER_SIZE;
-            float syStart =  dirtStartY * TILE_RENDER_SIZE;
-            float syEnd  =  (dirtStartY + 4) * TILE_RENDER_SIZE;
-            shape.line(sx, syStart, sx, syEnd);
+
+        int dirtStartX = (width - DIRT_WIDTH) / 2;
+        int dirtStartY = (height - DIRT_HEIGHT) / 2;
+
+        for (int x = dirtStartX; x <= dirtStartX + DIRT_WIDTH; x++) {
+            float px = x * TILE_SIZE;
+            shape.line(px, dirtStartY * TILE_SIZE, px, (dirtStartY + DIRT_HEIGHT) * TILE_SIZE);
         }
 
-        // draw horizontal lines for the dirt patch
-        for (int y = dirtStartY; y <= dirtStartY + 4; y++) {
-            float sy =  y * TILE_RENDER_SIZE;
-            float sxStart = dirtStartX * TILE_RENDER_SIZE;
-            float sxEnd   = (dirtStartX + 5) * TILE_RENDER_SIZE;
-            shape.line(sxStart, sy, sxEnd, sy);
+        for (int y = dirtStartY; y <= dirtStartY + DIRT_HEIGHT; y++) {
+            float py = y * TILE_SIZE;
+            shape.line(dirtStartX * TILE_SIZE, py, (dirtStartX + DIRT_WIDTH) * TILE_SIZE, py);
         }
     }
+
 
 
 
@@ -218,4 +273,42 @@ public class WorldGrid {
         if (x < 0 || y < 0 || x >= width || y >= height) return;
         crops[x][y] = crop;
     }
+
+    public void fillWithGrassOnly() {
+        hasDirtPatch = false;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                tiles[x][y].setType(TileType.GRASS);
+                crops[x][y] = null;
+                watered[x][y] = false;
+            }
+        }
+    }
+
+
+    public Rectangle getExitZone(WorldType type) {
+        float worldWidthPx  = width * TILE_SIZE;
+        float worldHeightPx = height * TILE_SIZE;
+
+        if (type == WorldType.FARM) {
+            // RIGHT side exit
+            return new Rectangle(
+                worldWidthPx - EXIT_WIDTH,
+                (worldHeightPx - EXIT_HEIGHT) / 2f,
+                EXIT_WIDTH,
+                EXIT_HEIGHT
+            );
+        } else {
+            // LEFT side exit (GREEN_FIELD)
+            return new Rectangle(
+                0,
+                (worldHeightPx - EXIT_HEIGHT) / 2f,
+                EXIT_WIDTH,
+                EXIT_HEIGHT
+            );
+        }
+    }
+
+
+
 }

@@ -11,6 +11,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.lamnguyen.farming.world.WorldType;
 
 public class IntroScreen implements Screen {
     private final MainGame game;
@@ -47,14 +48,14 @@ public class IntroScreen implements Screen {
         playBtn.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                game.setScreen(new GameScreen(game, false));
+                game.setScreen(new GameScreen(game, false, WorldType.FARM));
             }
         });
 
         loadBtn.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                game.setScreen(new GameScreen(game, true));
+                game.setScreen(new GameScreen(game, true, WorldType.FARM));
             }
         });
 
