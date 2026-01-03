@@ -16,12 +16,11 @@ public class WorldGrid {
     public static final int TILE_SIZE = 32;
     private static final int DIRT_WIDTH = 5;
     private static final int DIRT_HEIGHT = 4;
-    private static final int EXIT_WIDTH = 32;
-    private static final int EXIT_HEIGHT = 96;
     private int width;
     private int height;
     private Tile[][] tiles;
     private Crop[][] crops;
+    private Rectangle shopBounds;
 
     private boolean hasDirtPatch = false;
 
@@ -29,6 +28,7 @@ public class WorldGrid {
 
     private Texture dirtTex;
     private Texture grassTex;
+    private Texture shopTex;
 
     public WorldGrid(int width, int height) {
         this.width = width;
@@ -40,7 +40,9 @@ public class WorldGrid {
 
         dirtTex = new Texture("texture/dirt_texture.png");
         grassTex = new Texture("texture/grass_texture.png");
+        shopTex = new Texture("buildings/grocery_shop.png");
         grassTex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        shopTex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
 
         // Default everything to grass
         for (int x = 0; x < width; x++) {
@@ -51,7 +53,19 @@ public class WorldGrid {
         arrowLeft  = new Texture("ui/arrow_left.png");
         arrowRight = new Texture("ui/arrow_right.png");
         createExitZones();
+        initShopBounds();
+    }
 
+    private void initShopBounds() {
+        float x = getShopX();
+        float y = getShopY();
+
+        shopBounds = new Rectangle(
+            x,
+            y,
+            shopTex.getWidth(),
+            shopTex.getHeight()
+        );
     }
 
     private void createExitZones() {
@@ -74,7 +88,27 @@ public class WorldGrid {
         );
     }
 
+    public Rectangle getExitZone(WorldType type) {
+        if (type == WorldType.FARM) {
+            return rightExit;
+        } else {
+            return leftExit;
+        }
+    }
 
+    public Rectangle getShopBounds() {
+        return shopBounds;
+    }
+
+    public float getShopX() {
+        float worldPixelWidth = width * TILE_SIZE;
+        return (worldPixelWidth - shopTex.getWidth()) / 2f;
+    }
+
+    public float getShopY() {
+        float worldPixelHeight = height * TILE_SIZE;
+        return worldPixelHeight * 0.6f; // upper half
+    }
 
 
     public int getWidth() {
@@ -165,22 +199,6 @@ public class WorldGrid {
         batch.setColor(Color.WHITE);
     }
 
-    public void renderExitArrow(SpriteBatch batch, WorldType type) {
-        Rectangle exit = getExitZone(type);
-
-        Texture arrow = (type == WorldType.FARM)
-            ? arrowRight
-            : arrowLeft;
-
-        batch.draw(
-            arrow,
-            exit.x,
-            exit.y,
-            exit.width,
-            exit.height
-        );
-    }
-
 
 
     public void renderGridLines(ShapeRenderer shape) {
@@ -201,7 +219,31 @@ public class WorldGrid {
         }
     }
 
+    public void renderExitArrow(SpriteBatch batch, WorldType type) {
+        Rectangle exit = getExitZone(type);
 
+        Texture arrow = (type == WorldType.FARM)
+            ? arrowRight
+            : arrowLeft;
+
+        batch.draw(
+            arrow,
+            exit.x,
+            exit.y,
+            exit.width,
+            exit.height
+        );
+    }
+
+    public void renderShop(SpriteBatch batch, WorldType worldType) {
+        if (worldType != WorldType.GREEN_FIELD) return;
+
+        batch.draw(
+            shopTex,
+            getShopX(),
+            getShopY()
+        );
+    }
 
 
     public boolean isDirt(int x, int y) {
@@ -246,7 +288,6 @@ public class WorldGrid {
 
     public void harvest(int x, int y) {
         if (crops[x][y] != null && crops[x][y].isFullyGrown()) {
-            System.out.println("Sold for $" + crops[x][y].type.sellPrice);
             watered[x][y] = false;
             crops[x][y] = null;
         }
@@ -284,31 +325,5 @@ public class WorldGrid {
             }
         }
     }
-
-
-    public Rectangle getExitZone(WorldType type) {
-        float worldWidthPx  = width * TILE_SIZE;
-        float worldHeightPx = height * TILE_SIZE;
-
-        if (type == WorldType.FARM) {
-            // RIGHT side exit
-            return new Rectangle(
-                worldWidthPx - EXIT_WIDTH,
-                (worldHeightPx - EXIT_HEIGHT) / 2f,
-                EXIT_WIDTH,
-                EXIT_HEIGHT
-            );
-        } else {
-            // LEFT side exit (GREEN_FIELD)
-            return new Rectangle(
-                0,
-                (worldHeightPx - EXIT_HEIGHT) / 2f,
-                EXIT_WIDTH,
-                EXIT_HEIGHT
-            );
-        }
-    }
-
-
 
 }

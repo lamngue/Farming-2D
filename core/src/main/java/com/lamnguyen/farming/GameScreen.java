@@ -13,20 +13,24 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.lamnguyen.farming.entities.*;
 import com.lamnguyen.farming.save.CropData;
 import com.lamnguyen.farming.save.SaveData;
 import com.lamnguyen.farming.save.SaveManager;
+import com.lamnguyen.farming.state.ShopState;
 import com.lamnguyen.farming.systems.InputSystem;
 import com.lamnguyen.farming.systems.RenderSystem;
 import com.lamnguyen.farming.utils.CameraUtils;
 import com.lamnguyen.farming.world.WorldGrid;
 import com.lamnguyen.farming.world.WorldType;
 
+import java.util.Map;
+
 public class GameScreen  implements Screen {
-    private final Game game;
+    private final MainGame game;
     private final WorldType worldType;
 
     ShapeRenderer shape;
@@ -37,6 +41,7 @@ public class GameScreen  implements Screen {
     WorldGrid world;
     SpriteBatch batch;
     OrthographicCamera camera;
+    private ShopState shopState = new ShopState();
 
     private static final int MAP_WIDTH = 25;
     private static final int MAP_HEIGHT = 18;
@@ -49,8 +54,10 @@ public class GameScreen  implements Screen {
     private final boolean loadGame;
     private SaveManager saveManager;
     private boolean transitioning = false;
+    private boolean shopOpen = false;
+    private boolean shopTriggered = false; // prevents reopening while overlapping
 
-    public GameScreen(Game game, boolean loadGame, WorldType type) {
+    public GameScreen(MainGame game, boolean loadGame, WorldType type) {
         this.game = game;
         this.loadGame = loadGame;
         this.worldType = type;
@@ -107,9 +114,8 @@ public class GameScreen  implements Screen {
 
         // --- Create world ONCE ---
         world = new WorldGrid(MAP_WIDTH, MAP_HEIGHT);
-        player = new Player();
-        inventory = new Inventory();
-
+        player = game.player;
+        inventory = game.inventory;
         int dirtStartY = (MAP_HEIGHT - DIRT_HEIGHT) / 2;
         int dirtStartX = (MAP_WIDTH - DIRT_WIDTH) / 2;
 
@@ -171,7 +177,6 @@ public class GameScreen  implements Screen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.F5)) {
             SaveManager.save(this);
         }
-        font.getData().setScale(1.2f);
 
         float dt = Gdx.graphics.getDeltaTime();
 
@@ -194,6 +199,35 @@ public class GameScreen  implements Screen {
 
         ScreenUtils.clear(0, 0.6f, 0, 1);
 
+        if (worldType == WorldType.GREEN_FIELD) {
+
+            Rectangle playerRect = new Rectangle(
+                player.x,
+                player.y,
+                player.getSprite().getRegionWidth(),
+                player.getSprite().getRegionHeight()
+            );
+
+            Rectangle shopBounds = world.getShopBounds();
+            boolean overlappingShop = shopBounds.overlaps(playerRect);
+
+            if (overlappingShop && !shopTriggered) {
+                shopOpen = true;
+                shopTriggered = true;
+            }
+
+            if (shopOpen && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || !overlappingShop) {
+                shopOpen = false;
+            }
+
+            if (!overlappingShop) {
+                shopTriggered = false;
+            }
+        }
+
+
+
+
         // --- Render World ---
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -206,7 +240,27 @@ public class GameScreen  implements Screen {
         renderSystem.renderPlayer(batch, player, camera);
 
         // --- Render UI in screen coordinates ---
+        OrthographicCamera uiCamera = new OrthographicCamera();
+        uiCamera.setToOrtho(false,
+            Gdx.graphics.getWidth(),
+            Gdx.graphics.getHeight()
+        );
+        uiCamera.update();
+
+        batch.setProjectionMatrix(uiCamera.combined);
+
+        batch.begin();
+        if (shopOpen) {
+            handleShopMouseInput();
+        }
+
         renderSystem.renderUI(batch, whitePixelTexture, font, player);
+
+        if (shopOpen) {
+            renderSystem.renderShopPanel(batch, whitePixelTexture, font, player, shopState);
+        }
+
+        batch.end();
 
         Rectangle exitZone = world.getExitZone(worldType);
         Rectangle playerRect = new Rectangle(
@@ -260,4 +314,94 @@ public class GameScreen  implements Screen {
         shape.dispose();
         batch.dispose();
     }
+
+    private void handleShopMouseInput() {
+
+        if (!Gdx.input.justTouched()) return;
+
+        float mx = Gdx.input.getX();
+        float my = Gdx.graphics.getHeight() - Gdx.input.getY(); // flip Y
+
+        Vector2 mouse = new Vector2(mx, my);
+
+
+
+        if (shopState.buyTab.contains(mouse)) {
+            shopState.activeTab = ShopState.ShopTab.BUY;
+            shopState.selectedItem = null;
+            shopState.selectedAmount = 1;
+        }
+
+        if (shopState.sellTab.contains(mouse)) {
+            shopState.activeTab = ShopState.ShopTab.SELL;
+            shopState.selectedItem = null;
+            shopState.selectedAmount = 1;
+        }
+
+        // Click outside panel → close
+        if (!shopState.panelBounds.contains(mouse)) {
+            shopOpen = false;
+            shopState.reset();
+            return;
+        }
+
+        // Select item
+        for (Map.Entry<ItemType, Rectangle> e : shopState.itemButtons.entrySet()) {
+            if (e.getValue().contains(mouse)) {
+                shopState.selectedItem = e.getKey();
+                shopState.selectedAmount = 1;
+                return;
+            }
+        }
+
+        // Quantity buttons
+        if (shopState.plusButton.contains(mouse)) {
+            shopState.selectedAmount++;
+            return;
+        }
+
+        if (shopState.minusButton.contains(mouse)) {
+            shopState.selectedAmount = Math.max(1, shopState.selectedAmount - 1);
+            return;
+        }
+
+        // Sell
+        if (shopState.sellButton.contains(mouse)) {
+            sellSelectedItem();
+        }
+
+        if (shopState.buyButton.contains(mouse)) {
+            buySelectedItem();
+        }
+    }
+
+    private void sellSelectedItem() {
+        ItemType item = shopState.selectedItem;
+        if (item == null || item.sellPrice == null) return;
+
+        int owned = player.inventory.get(item);
+        int sellAmount = Math.min(shopState.selectedAmount, owned);
+        if (sellAmount <= 0) return;
+
+        player.inventory.remove(item, sellAmount);
+        player.addMoney(sellAmount * item.sellPrice);
+
+        shopState.selectedAmount = 1;
+    }
+
+
+
+    private void buySelectedItem() {
+        ItemType item = shopState.selectedItem;
+        if (item == null || item.sellPrice == null) return;
+
+        int cost = shopState.selectedAmount * item.sellPrice;
+        if (player.money < cost) return;
+
+        player.subtractMoney(cost);
+        player.inventory.add(item, shopState.selectedAmount);
+
+        shopState.selectedAmount = 1;
+    }
+
 }

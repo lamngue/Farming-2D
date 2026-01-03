@@ -18,12 +18,11 @@ public class Inventory {
         items.put(item, amount);
     }
 
-    public boolean remove(ItemType item, int amount) {
+    public void remove(ItemType item, int amount) {
         int current = items.getOrDefault(item, 0);
-        if (current < amount) return false;
+        if (current < amount) return;
 
         items.put(item, current - amount);
-        return true;
     }
 
     public int get(ItemType item) {

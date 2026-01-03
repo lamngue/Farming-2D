@@ -81,7 +81,6 @@ public class InputSystem {
                 ItemType harvest = c.getHarvestItem();
                 if (harvest != null) {
                     player.inventory.add(harvest, 1);
-                    player.addMoney(c.type.sellPrice);
                     world.harvest(tileX, tileY);
                 }
             }
@@ -99,6 +98,9 @@ public class InputSystem {
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) {
             player.selectedSeed = ItemType.POTATO_SEED;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)) {
+            player.selectedSeed = ItemType.PUMPKIN_SEED;
         }
     }
 

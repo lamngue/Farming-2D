@@ -60,6 +60,8 @@ public class Player {
         inventory.add(ItemType.TOMATO_CROP, 0);
         inventory.add(ItemType.POTATO_SEED, 5); // starting seeds
         inventory.add(ItemType.POTATO_CROP, 0);
+        inventory.add(ItemType.PUMPKIN_SEED, 5); // starting seeds
+        inventory.add(ItemType.POTATO_CROP, 0);
     }
 
     private Animation<TextureRegion> createAnim(TextureAtlas atlas, String name, float frameDuration, Animation.PlayMode mode) {
@@ -75,6 +77,10 @@ public class Player {
 
     public void addMoney(int amount) {
         money += amount;
+    }
+
+    public void subtractMoney(int amount) {
+        money -= amount;
     }
 
     public void loadTextures(TextureAtlas atlas) {

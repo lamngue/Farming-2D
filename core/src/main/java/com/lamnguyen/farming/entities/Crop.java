@@ -143,6 +143,7 @@ public class Crop {
             case WHEAT: return ItemType.WHEAT_CROP;
             case POTATO: return ItemType.POTATO_CROP;
             case TOMATO: return ItemType.TOMATO_CROP;
+            case PUMPKIN: return ItemType.PUMPKIN_CROP;
         }
         return null;
     }

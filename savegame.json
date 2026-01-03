@@ -8,8 +8,6 @@ player: {
 inventory: {
 	items: {
 		POTATO_SEED: 5
-		WHEAT_CROP: 1
-		CORN_SEED: 5
 		WHEAT_SEED: 4
 	}
 }

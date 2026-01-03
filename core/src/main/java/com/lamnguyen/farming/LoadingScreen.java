@@ -7,11 +7,11 @@ import com.lamnguyen.farming.world.WorldType;
 
 public class LoadingScreen implements Screen {
 
-    private final Game game;
+    private final MainGame game;
     private final WorldType nextWorld;
     private float timer;
 
-    public LoadingScreen(Game game, WorldType nextWorld) {
+    public LoadingScreen(MainGame game, WorldType nextWorld) {
         this.game = game;
         this.nextWorld = nextWorld;
     }
