@@ -22,8 +22,8 @@ public class MainGame extends Game {
 
     @Override
     public void dispose() {
-        if (batch != null) batch.dispose();
-        super.dispose(); // disposes current screen
+        batch.dispose();
+        super.dispose();
     }
 
 }

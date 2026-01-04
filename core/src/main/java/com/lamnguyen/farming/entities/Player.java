@@ -21,7 +21,7 @@ public class Player {
 
 
     public float x, y; // now in pixels
-    public static final float SPEED = 120f; // pixels per second
+    public static final float SPEED = 150f; // pixels per second
 
     public enum Direction { UP, DOWN, LEFT, RIGHT }
     public Direction direction = Direction.DOWN;
@@ -54,13 +54,13 @@ public class Player {
 
         this.x = startTileX * WorldGrid.TILE_SIZE;
         this.y = startTileY * WorldGrid.TILE_SIZE;
-        inventory.add(ItemType.WHEAT_SEED, 5); // starting seeds
+        inventory.add(ItemType.WHEAT_SEED, 1); // starting seeds
         inventory.add(ItemType.WHEAT_CROP, 0);
-        inventory.add(ItemType.TOMATO_SEED, 5); // starting seeds
+        inventory.add(ItemType.TOMATO_SEED, 1); // starting seeds
         inventory.add(ItemType.TOMATO_CROP, 0);
-        inventory.add(ItemType.POTATO_SEED, 5); // starting seeds
+        inventory.add(ItemType.POTATO_SEED, 1); // starting seeds
         inventory.add(ItemType.POTATO_CROP, 0);
-        inventory.add(ItemType.PUMPKIN_SEED, 5); // starting seeds
+        inventory.add(ItemType.PUMPKIN_SEED, 1); // starting seeds
         inventory.add(ItemType.POTATO_CROP, 0);
     }
 

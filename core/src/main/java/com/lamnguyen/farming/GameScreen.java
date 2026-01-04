@@ -12,8 +12,10 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.lamnguyen.farming.entities.*;
@@ -27,13 +29,14 @@ import com.lamnguyen.farming.utils.CameraUtils;
 import com.lamnguyen.farming.world.WorldGrid;
 import com.lamnguyen.farming.world.WorldType;
 
-import java.util.Map;
-
-public class GameScreen  implements Screen {
+public class GameScreen implements Screen {
     private final MainGame game;
     private final WorldType worldType;
-
+    private String uiMessage = null;
+    private float uiMessageTimer = 0f;
+    private static final float UI_MESSAGE_DURATION = 3f;
     ShapeRenderer shape;
+    private boolean screenChangeQueued = false;
 
 
     Player player = new Player();
@@ -42,6 +45,7 @@ public class GameScreen  implements Screen {
     SpriteBatch batch;
     OrthographicCamera camera;
     private ShopState shopState = new ShopState();
+    private OrthographicCamera uiCamera = new OrthographicCamera();
 
     private static final int MAP_WIDTH = 25;
     private static final int MAP_HEIGHT = 18;
@@ -53,7 +57,6 @@ public class GameScreen  implements Screen {
     Texture whitePixelTexture;
     private final boolean loadGame;
     private SaveManager saveManager;
-    private boolean transitioning = false;
     private boolean shopOpen = false;
     private boolean shopTriggered = false; // prevents reopening while overlapping
 
@@ -61,6 +64,10 @@ public class GameScreen  implements Screen {
         this.game = game;
         this.loadGame = loadGame;
         this.worldType = type;
+        this.uiCamera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        this.shape = new ShapeRenderer();
+        this.batch = game.batch;
+        this.font = new BitmapFont();
     }
 
     public Player getPlayer() {
@@ -108,8 +115,6 @@ public class GameScreen  implements Screen {
 
     @Override
     public void show() {
-        transitioning = false;
-
         saveManager = new SaveManager();
 
         // --- Create world ONCE ---
@@ -138,14 +143,13 @@ public class GameScreen  implements Screen {
 
         // --- Load save OR start fresh ---
         if (loadGame && saveManager.hasSave() && worldType == WorldType.FARM) {
+            System.out.println("LOADING SAVED GAME");
             SaveData data = saveManager.load();
             applySave(data);
         }
 
         // --- Rendering setup ---
-        shape = new ShapeRenderer();
-        batch = new SpriteBatch();
-        font = new BitmapFont();
+
 
         // Camera (DO NOT recreate world after this)
         camera = new OrthographicCamera();
@@ -173,6 +177,20 @@ public class GameScreen  implements Screen {
 
     @Override
     public void render(float delta) {
+
+        // --- Handle shop input FIRST ---
+        if (shopOpen) {
+            handleShopKeyboardInput();
+        }
+
+
+        if (uiMessageTimer > 0) {
+            uiMessageTimer -= delta;
+            if (uiMessageTimer <= 0) {
+                uiMessage = null;
+            }
+        }
+
         // --- Save ---
         if (Gdx.input.isKeyJustPressed(Input.Keys.F5)) {
             SaveManager.save(this);
@@ -181,7 +199,11 @@ public class GameScreen  implements Screen {
         float dt = Gdx.graphics.getDeltaTime();
 
         // --- Update ---
-        input.updatePlayer(player, dt);
+
+        if (!shopOpen) {
+            input.updatePlayer(player, dt);
+        }
+
         player.clampPosition(world.getWidth(), world.getHeight());
         world.update(dt);
         player.updateAnimation(dt);
@@ -211,22 +233,20 @@ public class GameScreen  implements Screen {
             Rectangle shopBounds = world.getShopBounds();
             boolean overlappingShop = shopBounds.overlaps(playerRect);
 
-            if (overlappingShop && !shopTriggered) {
+            // Open shop ONLY when entering
+            if (overlappingShop && !shopOpen && !shopTriggered) {
                 shopOpen = true;
                 shopTriggered = true;
+                shopState.reset();
+                updateShopItems();
             }
 
-            if (shopOpen && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || !overlappingShop) {
-                shopOpen = false;
-            }
-
-            if (!overlappingShop) {
+            // Reset trigger ONLY when fully leaving zone
+            if (!overlappingShop && !shopOpen) {
                 shopTriggered = false;
             }
+
         }
-
-
-
 
         // --- Render World ---
         camera.update();
@@ -239,28 +259,23 @@ public class GameScreen  implements Screen {
         // Player
         renderSystem.renderPlayer(batch, player, camera);
 
-        // --- Render UI in screen coordinates ---
-        OrthographicCamera uiCamera = new OrthographicCamera();
-        uiCamera.setToOrtho(false,
-            Gdx.graphics.getWidth(),
-            Gdx.graphics.getHeight()
-        );
-        uiCamera.update();
 
         batch.setProjectionMatrix(uiCamera.combined);
 
         batch.begin();
-        if (shopOpen) {
-            handleShopMouseInput();
-        }
+        // --- Handle UI input FIRST ---
 
+        if (shopOpen) {
+            renderSystem.renderShopPanel(batch, whitePixelTexture, font, shopState, player);
+        }
+        if (uiMessage != null) {
+            renderSystem.renderTopMessage(batch, font, uiMessage);
+        }
         renderSystem.renderUI(batch, whitePixelTexture, font, player);
-
-        if (shopOpen) {
-            renderSystem.renderShopPanel(batch, whitePixelTexture, font, player, shopState);
-        }
+        font.setColor(Color.WHITE);
 
         batch.end();
+
 
         Rectangle exitZone = world.getExitZone(worldType);
         Rectangle playerRect = new Rectangle(
@@ -270,17 +285,19 @@ public class GameScreen  implements Screen {
             player.getSprite().getRegionHeight()
         );
 
-        if (exitZone.overlaps(playerRect) && !transitioning) {
-            transitioning = true;
+        if (!screenChangeQueued && exitZone.overlaps(playerRect)) {
+            screenChangeQueued = true;
 
             WorldType next =
                 (worldType == WorldType.FARM)
                     ? WorldType.GREEN_FIELD
                     : WorldType.FARM;
 
-            game.setScreen(new LoadingScreen(game, next));
+            // Delay screen change to NEXT FRAME
+            Gdx.app.postRunnable(() -> {
+                game.setScreen(new LoadingScreen(game, next));
+            });
         }
-
 
     }
 
@@ -312,96 +329,124 @@ public class GameScreen  implements Screen {
     @Override
     public void dispose() {
         shape.dispose();
-        batch.dispose();
+        font.dispose();
     }
 
-    private void handleShopMouseInput() {
+    private void updateShopItems() {
+        shopState.visibleItems.clear();
 
-        if (!Gdx.input.justTouched()) return;
-
-        float mx = Gdx.input.getX();
-        float my = Gdx.graphics.getHeight() - Gdx.input.getY(); // flip Y
-
-        Vector2 mouse = new Vector2(mx, my);
-
-
-
-        if (shopState.buyTab.contains(mouse)) {
-            shopState.activeTab = ShopState.ShopTab.BUY;
-            shopState.selectedItem = null;
-            shopState.selectedAmount = 1;
-        }
-
-        if (shopState.sellTab.contains(mouse)) {
-            shopState.activeTab = ShopState.ShopTab.SELL;
-            shopState.selectedItem = null;
-            shopState.selectedAmount = 1;
-        }
-
-        // Click outside panel → close
-        if (!shopState.panelBounds.contains(mouse)) {
-            shopOpen = false;
-            shopState.reset();
-            return;
-        }
-
-        // Select item
-        for (Map.Entry<ItemType, Rectangle> e : shopState.itemButtons.entrySet()) {
-            if (e.getValue().contains(mouse)) {
-                shopState.selectedItem = e.getKey();
-                shopState.selectedAmount = 1;
-                return;
+        for (ItemType item : ItemType.values()) {
+            if (shopState.activeTab == ShopState.ShopTab.BUY && item.isSeed()) {
+                shopState.visibleItems.add(item);
+            }
+            if (shopState.activeTab == ShopState.ShopTab.SELL && !item.isSeed()) {
+                if (player.inventory.get(item) > 0) {
+                    shopState.visibleItems.add(item);
+                }
             }
         }
 
-        // Quantity buttons
-        if (shopState.plusButton.contains(mouse)) {
+        shopState.selectedIndex = MathUtils.clamp(
+            shopState.selectedIndex,
+            0,
+            Math.max(0, shopState.visibleItems.size - 1)
+        );
+    }
+
+    private void handleShopKeyboardInput() {
+        if (!shopOpen) return;
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            closeShop();
+            return;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.TAB)) {
+            shopState.activeTab =
+                shopState.activeTab == ShopState.ShopTab.BUY
+                    ? ShopState.ShopTab.SELL
+                    : ShopState.ShopTab.BUY;
+
+            shopState.reset();
+            updateShopItems();
+            return;
+        }
+
+        if (shopState.visibleItems.isEmpty()) return;
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
+            shopState.selectedIndex =
+                Math.max(0, shopState.selectedIndex - 1);
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
+            shopState.selectedIndex =
+                Math.min(shopState.visibleItems.size - 1,
+                    shopState.selectedIndex + 1);
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.A)) {
+            shopState.selectedAmount =
+                Math.max(1, shopState.selectedAmount - 1);
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.D)) {
             shopState.selectedAmount++;
-            return;
         }
 
-        if (shopState.minusButton.contains(mouse)) {
-            shopState.selectedAmount = Math.max(1, shopState.selectedAmount - 1);
-            return;
-        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            ItemType item = shopState.visibleItems.get(shopState.selectedIndex);
 
-        // Sell
-        if (shopState.sellButton.contains(mouse)) {
-            sellSelectedItem();
-        }
+            if (shopState.activeTab == ShopState.ShopTab.BUY) {
+                buyItem(item);
+            } else {
+                sellItem(item);
+            }
 
-        if (shopState.buyButton.contains(mouse)) {
-            buySelectedItem();
+            updateShopItems(); // refresh after inventory change
         }
     }
 
-    private void sellSelectedItem() {
-        ItemType item = shopState.selectedItem;
-        if (item == null || item.sellPrice == null) return;
 
+    private void closeShop() {
+        shopOpen = false;
+        shopTriggered = true;   // prevent immediate reopen while overlapping
+        shopState.reset();
+    }
+
+
+    private void sellItem(ItemType item) {
         int owned = player.inventory.get(item);
-        int sellAmount = Math.min(shopState.selectedAmount, owned);
-        if (sellAmount <= 0) return;
+        int amount = Math.min(shopState.selectedAmount, owned);
 
-        player.inventory.remove(item, sellAmount);
-        player.addMoney(sellAmount * item.sellPrice);
+        if (amount <= 0) return;
+
+        player.inventory.remove(item, amount);
+        player.addMoney(amount * item.sellPrice);
 
         shopState.selectedAmount = 1;
     }
 
 
 
-    private void buySelectedItem() {
-        ItemType item = shopState.selectedItem;
-        if (item == null || item.sellPrice == null) return;
+    private void buyItem(ItemType item) {
+        int cost = shopState.selectedAmount * item.buyPrice;
 
-        int cost = shopState.selectedAmount * item.sellPrice;
-        if (player.money < cost) return;
+        if (player.money < cost) {
+            showUIMessage("Not enough money!");
+            return;
+        }
 
         player.subtractMoney(cost);
         player.inventory.add(item, shopState.selectedAmount);
 
         shopState.selectedAmount = 1;
     }
+
+    private void showUIMessage(String message) {
+        uiMessage = message;
+        uiMessageTimer = UI_MESSAGE_DURATION;
+    }
+
 
 }
